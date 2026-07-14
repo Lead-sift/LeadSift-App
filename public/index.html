@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tamiz Comercial — Filtramos tus consultas, tú te quedas con las ventas</title>
+<style>
+  :root {
+    --azul: #1a4d8f;
+    --azul-oscuro: #123a6b;
+    --verde: #1a9f4d;
+    --gris: #666;
+    --fondo: #fafafa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    color: #222;
+    background: var(--fondo);
+  }
+  header {
+    background: linear-gradient(135deg, var(--azul), var(--azul-oscuro));
+    color: white;
+    padding: 4rem 1.5rem 5rem;
+    text-align: center;
+  }
+  header h1 { font-size: 2.2rem; margin-bottom: 0.75rem; }
+  header p { font-size: 1.15rem; opacity: 0.92; max-width: 600px; margin: 0 auto; }
+  .contenedor { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+  section.bloque { padding: 3.5rem 0; }
+  h2 { font-size: 1.6rem; text-align: center; margin-bottom: 2rem; }
+  .como-funciona {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+  }
+  .paso {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    border: 1px solid #e5e5e5;
+  }
+  .paso .numero {
+    display: inline-block;
+    width: 28px; height: 28px;
+    background: var(--azul);
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-weight: bold;
+    margin-bottom: 0.75rem;
+  }
+  .demo-caja {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    border: 1px solid #e5e5e5;
+  }
+  .demo-caja p.aviso { font-size: 0.85rem; color: var(--gris); margin-top: -0.5rem; margin-bottom: 1.25rem; }
+  textarea#demo-input {
+    width: 100%;
+    min-height: 90px;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+    font-size: 1rem;
+  }
+  button#demo-enviar {
+    margin-top: 0.75rem;
+    background: var(--verde);
+    color: white;
+    border: none;
+    padding: 0.7rem 1.4rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button#demo-enviar:disabled { opacity: 0.6; cursor: not-allowed; }
+  .ejemplos { margin-top: 0.75rem; font-size: 0.85rem; }
+  .ejemplos button {
+    background: #eef3fb;
+    border: 1px solid #cddcf0;
+    color: var(--azul-oscuro);
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    margin: 0.2rem 0.3rem 0.2rem 0;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  #demo-resultado { margin-top: 1.5rem; }
+  .resultado-tarjeta {
+    background: #f4f8ff;
+    border-left: 4px solid var(--azul);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+  }
+  .resultado-tarjeta.spam { border-left-color: #999; background: #f5f5f5; }
+  .etiqueta {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background: var(--azul);
+    color: white;
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    margin-bottom: 0.6rem;
+  }
+  .ficha-lead div { margin-bottom: 0.35rem; font-size: 0.95rem; }
+  footer { text-align: center; padding: 2.5rem 1.5rem; color: var(--gris); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="contenedor">
+    <h1>Tamiz Comercial</h1>
+    <p>Recibimos las consultas de tus clientes, separamos el interés real del ruido, y solo te llega lo que de verdad importa. Te ahorras un comercial dedicado a filtrar; te quedamos nosotros como refuerzo.</p>
+  </div>
+</header>
+
+<section class="bloque contenedor">
+  <h2>Cómo funciona</h2>
+  <div class="como-funciona">
+    <div class="paso">
+      <span class="numero">1</span>
+      <p>Recibimos las consultas de tu web, formulario o WhatsApp, las 24 horas.</p>
+    </div>
+    <div class="paso">
+      <span class="numero">2</span>
+      <p>Filtramos: descartamos spam, respondemos lo informativo al momento, y cualificamos lo que es una oportunidad real.</p>
+    </div>
+    <div class="paso">
+      <span class="numero">3</span>
+      <p>Te avisamos solo con los leads que importan, con toda la información ya recogida: contacto, necesidad, urgencia.</p>
+    </div>
+    <div class="paso">
+      <span class="numero">4</span>
+      <p>Tú decides: te lo derivamos a tu equipo comercial, o lo gestionamos nosotros hasta el cierre.</p>
+    </div>
+  </div>
+</section>
+
+<section class="bloque contenedor">
+  <h2>Pruébalo tú mismo</h2>
+  <div class="demo-caja">
+    <p class="aviso">
+      Ejemplo de demostración: así respondería Tamiz a una consulta de alquiler de una sala de fiestas. Escribe tu propia consulta como si fueras un cliente potencial.
+    </p>
+    <textarea id="demo-input" placeholder="Ej: Hola, quiero reservar para el cumpleaños de mi hijo, seríamos 15 niños, ¿qué precio tendría?"></textarea>
+    <div class="ejemplos">
+      <button type="button" onclick="rellenarEjemplo(0)">Ejemplo: cumpleaños</button>
+      <button type="button" onclick="rellenarEjemplo(1)">Ejemplo: consulta de horario</button>
+      <button type="button" onclick="rellenarEjemplo(2)">Ejemplo: spam</button>
+    </div>
+    <br>
+    <button id="demo-enviar" onclick="enviarDemo()">Probar</button>
+    <div id="demo-resultado"></div>
+  </div>
+</section>
+
+<footer>
+  Tamiz Comercial — filtramos tus consultas comerciales para que solo llegue lo que importa.
+</footer>
+
+<script>
+  const ejemplos = [
+    "Hola, quiero reservar la sala para el cumpleaños de mi hija, seríamos unos 18 niños, un sábado por la tarde. ¿Qué precio tendría?",
+    "Hola, ¿cuál es el horario de atención por WhatsApp?",
+    "Gana dinero rápido invirtiendo en criptomonedas, escríbenos ya!!!"
+  ];
+
+  function rellenarEjemplo(i) {
+    document.getElementById('demo-input').value = ejemplos[i];
+  }
+
+  async function enviarDemo() {
+    const input = document.getElementById('demo-input');
+    const boton = document.getElementById('demo-enviar');
+    const resultado = document.getElementById('demo-resultado');
+    const texto = input.value.trim();
+
+    if (!texto) return;
+
+    boton.disabled = true;
+    boton.textContent = 'Analizando...';
+    resultado.innerHTML = '';
+
+    try {
+      const res = await fetch('/api/demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto }),
+      });
+      const datos = await res.json();
+
+      if (!res.ok) {
+        resultado.innerHTML = `<div class="resultado-tarjeta"><p>${datos.error?.message || datos.error || 'Ha ocurrido un error'}</p></div>`;
+        return;
+      }
+
+      resultado.innerHTML = renderizarResultado(datos);
+    } catch (e) {
+      resultado.innerHTML = '<div class="resultado-tarjeta"><p>Error de conexión. Inténtalo de nuevo.</p></div>';
+    } finally {
+      boton.disabled = false;
+      boton.textContent = 'Probar';
+    }
+  }
+
+  function renderizarResultado(datos) {
+    if (datos.intencion === 'spam') {
+      return `<div class="resultado-tarjeta spam">
+        <span class="etiqueta">Descartado como spam</span>
+        <p>${datos.mensaje}</p>
+      </div>`;
+    }
+
+    if (datos.intencion === 'informativa') {
+      return `<div class="resultado-tarjeta">
+        <span class="etiqueta">Consulta informativa — respondida al instante</span>
+        <p>${datos.respuesta}</p>
+      </div>`;
+    }
+
+    const f = datos.ficha;
+    const etiquetaIntencion = datos.intencion === 'consulta_disponibilidad' ? 'Consulta de disponibilidad' : 'Lead potencial';
+    return `<div class="resultado-tarjeta">
+      <span class="etiqueta">${etiquetaIntencion} · score: ${f.score}</span>
+      <div class="ficha-lead">
+        <div><strong>Necesidad:</strong> ${f.necesidad || '—'}</div>
+        <div><strong>Urgencia:</strong> ${f.urgencia || '—'}</div>
+        <div><strong>Requiere escalado humano:</strong> ${f.requiereEscaladoHumano ? 'Sí' : 'No'}</div>
+        ${f.motivoEscalado ? `<div><strong>Motivo:</strong> ${f.motivoEscalado}</div>` : ''}
+      </div>
+      <p style="margin-top:0.75rem;"><strong>Respuesta que se enviaría:</strong><br>${f.respuestaSugerida}</p>
+    </div>`;
+  }
+</script>
+
+</body>
+</html>

@@ -10,6 +10,8 @@ async function main() {
       sector: espaiLaLira.sector,
       tono_comunicacion: espaiLaLira.tono,
       idioma_principal: "ca/es",
+      // TODO: sustituir por el email comercial real cuando esté creado.
+      canal_config: { email_notificacion: "PENDIENTE_EMAIL_COMERCIAL@espailalira.com" },
     })
     .select()
     .single();

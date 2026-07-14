@@ -2,6 +2,7 @@ import { supabase } from "./supabaseClient.js";
 import { clasificarIntencion } from "./clasificador.js";
 import { cualificarLead } from "./cualificador.js";
 import { generarRespuestaInformativa } from "./responderInformativa.js";
+import { notificarComercial, requiereNotificacion } from "./notificarComercial.js";
 
 export interface MensajeEntrante {
   empresaId: string;
@@ -79,6 +80,21 @@ export async function procesarMensajeEntrante(
     contenido: ficha.respuestaSugerida,
     requiere_aprobacion: true, // modo borrador: revisión humana obligatoria en el piloto
   });
+
+  if (requiereNotificacion(lead, ficha.requiereEscaladoHumano)) {
+    try {
+      await notificarComercial(
+        mensaje.empresaId,
+        lead,
+        { canal: mensaje.canal, remitenteContacto: mensaje.remitenteContacto },
+        ficha.motivoEscalado
+      );
+    } catch (error) {
+      // No bloquea la respuesta al cliente: el lead ya está guardado y
+      // visible en el panel de revisión aunque falle el email.
+      console.error("Error notificando al comercial:", error);
+    }
+  }
 
   return { conversacionId: conversacion.id, intencion, lead, ficha };
 }

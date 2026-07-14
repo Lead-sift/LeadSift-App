@@ -85,6 +85,31 @@ Normas del espacio:
 `.trim(),
 };
 
+// Ejemplo ficticio y genérico (sin datos reales de ningún cliente) para
+// usar en la demo pública de marketing. No corresponde a ninguna empresa
+// real: nombre, precios y datos de contacto son inventados a propósito.
+export const salaEventosDemo: ConfigEmpresa = {
+  nombre: "Sala Ejemplo (demo)",
+  sector: "alquiler de sala de fiestas para celebraciones (cumpleaños, fiestas infantiles, eventos)",
+  tono: "cercano y familiar, tuteo",
+  idioma: "detecta si el cliente escribe en catalán o castellano y responde en ese mismo idioma",
+  catalogoOFaq: `
+- Este es un ejemplo de demostración, no una empresa real.
+- Capacidad: aprox. 80 personas.
+- Tipos de evento: fiestas infantiles, cumpleaños, comuniones, celebraciones con servicio de mesa.
+- Tarifas orientativas: mañana 90€, tarde 120€, noche 200€ (precios de ejemplo).
+- Incluye: mobiliario básico, zona infantil, equipo de música.
+- Contacto de ejemplo: WhatsApp/teléfono de demostración, reserva con señal de 50€.
+`.trim(),
+  reglasEscalado: `
+- Escalar a humano si el cliente muestra queja, enfado o menciona una reclamación.
+- Escalar a humano si pregunta por descuentos o condiciones de pago fuera de lo indicado.
+- Escalar a humano si el evento es de aforo grande, boda, evento corporativo, o fuera del uso habitual de fiesta infantil/cumpleaños.
+- Escalar a humano si la fecha genera dudas de disponibilidad real (no hay acceso a calendario en esta demo).
+- No escalar si es una consulta informativa estándar.
+`.trim(),
+};
+
 export function construirPromptSistema(config: ConfigEmpresa): string {
   return `
 Eres el asistente de atención comercial de "${config.nombre}", una empresa del sector: ${config.sector}.
