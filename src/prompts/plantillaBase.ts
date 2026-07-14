@@ -28,6 +28,63 @@ export const empresaEjemplo: ConfigEmpresa = {
 `.trim(),
 };
 
+// Cliente de prueba real: Espai la Lira (espailalira.com), sala de alquiler
+// para fiestas infantiles y celebraciones en Montornès del Vallès (Barcelona).
+// Datos extraídos de la web pública en julio 2026 — revisar y actualizar si
+// cambian tarifas o condiciones.
+export const espaiLaLira: ConfigEmpresa = {
+  nombre: "Espai la Lira",
+  sector: "alquiler de sala de fiestas para celebraciones (cumpleaños, fiestas infantiles, eventos)",
+  tono: "cercano y familiar, tuteo, en el estilo de un negocio local de confianza",
+  idioma: "detecta si el cliente escribe en catalán o castellano y responde en ese mismo idioma",
+  catalogoOFaq: `
+- Ubicación: Cruïlla de la Rambla Sant Sadurní amb Passatge del Teatre, Montornès del Vallès (Barcelona).
+- Contacto: WhatsApp/teléfono 609 823 938, o formulario web.
+- Capacidad: 190 m², aforo aproximado de 90 personas.
+- Tipos de evento: fiestas infantiles, cumpleaños, comuniones, celebraciones con servicio de mesa (desayuno/comida/merienda/cena), eventos de empresa.
+
+Tarifas por franja horaria:
+- Mañana (09:30-14:30): 80€ entre semana y viernes/víspera festivo, 160€ sábados/domingos/festivos.
+- Tarde (15:30-20:30): 100€ entre semana, 150€ viernes/víspera festivo, 160€ fin de semana/festivo.
+- Noche (21:30-02:30): no disponible de lunes a jueves; 220€ viernes/víspera y fines de semana.
+- Ampliación de horario nocturno (02:30-05:30): 60€ extra (no disponible entre semana).
+- Paquetes combinados: mañana+tarde 150-300€ según día; tarde+noche 320-340€; mañana+tarde+noche 370-420€ según día.
+
+Qué incluye el alquiler:
+- Mobiliario: 60 sillas, 11 mesas, 2 tronos, 2 sofás.
+- Equipo de música, proyector, Chromecast, bola de discoteca LED, wifi.
+- Cocina: frigoríficos, microondas, cafetera.
+- Climatización (aire acondicionado y calefacción).
+- Zona infantil: parque con piscina de bolas, zona de juegos, futbolín gratuito.
+- Bolsas de basura y útiles de limpieza básica (el cliente debe dejar la sala recogida; la limpieza profunda la hace el local).
+
+Servicios adicionales NO incluidos en el precio (se contratan aparte, con proveedores externos recomendados por Espai la Lira, sin precio fijo publicado — consultar disponibilidad):
+- Catering: Pastelería Viñallonga, Mi Rincón Dulce (tartas y mesas dulces).
+- Animación/DJ: DJ Wateke, DJ Marc.
+- Fotomatón: Gaudir Photos.
+- Decoración (globos, piñatas): Piñatas Barcelona.
+
+Reserva y cancelación:
+- Para reservar: contactar por WhatsApp o llamada al 609 823 938.
+- Señal de reserva: 50€.
+- El resto del importe se paga el día del evento.
+- Cancelación con más de 15 días naturales de antelación: se devuelve la señal. Con menos de 15 días: no se devuelve.
+- Eventos nocturnos: depósito adicional de 100€, reembolsable.
+
+Normas del espacio:
+- Prohibido confeti fuera de zonas designadas.
+- Respetar el descanso de los vecinos (especialmente en horario nocturno).
+- Aparcamiento solo para carga y descarga.
+`.trim(),
+  reglasEscalado: `
+- Escalar a humano si el cliente muestra queja, enfado o menciona una reclamación.
+- Escalar a humano si pregunta por descuentos o condiciones de pago fuera de lo indicado (negociación de precio).
+- Escalar a humano si el evento es de aforo grande (cerca del máximo de 90 personas), es una boda, evento corporativo, o cualquier celebración fuera del uso habitual de fiesta infantil/cumpleaños estándar.
+- Escalar a humano si la fecha del evento genera dudas de disponibilidad real (la IA no tiene acceso al calendario de reservas en tiempo real).
+- No escalar si es una consulta informativa estándar (tarifas, qué incluye el alquiler, ubicación, servicios adicionales recomendados).
+`.trim(),
+};
+
 export function construirPromptSistema(config: ConfigEmpresa): string {
   return `
 Eres el asistente de atención comercial de "${config.nombre}", una empresa del sector: ${config.sector}.

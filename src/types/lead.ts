@@ -1,4 +1,8 @@
-export type Intencion = "spam" | "informativa" | "lead_potencial";
+export type Intencion =
+  | "spam"
+  | "informativa"
+  | "lead_potencial"
+  | "consulta_disponibilidad";
 
 export type Urgencia = "alta" | "media" | "baja";
 

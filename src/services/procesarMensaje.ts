@@ -36,7 +36,10 @@ export async function procesarMensajeEntrante(
 
   const intencion = await clasificarIntencion(mensaje.texto);
 
-  if (intencion !== "lead_potencial") {
+  const requiereCualificacion =
+    intencion === "lead_potencial" || intencion === "consulta_disponibilidad";
+
+  if (!requiereCualificacion) {
     return { conversacionId: conversacion.id, intencion, lead: null };
   }
 

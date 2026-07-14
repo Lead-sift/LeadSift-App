@@ -4,10 +4,11 @@ import type { Intencion } from "../types/lead.js";
 const PROMPT_CLASIFICADOR = `
 Clasifica el siguiente mensaje de un cliente en una de estas categorías exactas:
 - spam: publicidad, contenido irrelevante o abusivo.
-- informativa: pregunta general sin intención de compra clara (horarios, ubicación, curiosidad).
-- lead_potencial: muestra intención de compra o solicita presupuesto/contacto comercial.
+- informativa: pregunta general sin intención de compra clara (qué incluye el servicio, ubicación, condiciones, curiosidad).
+- consulta_disponibilidad: el cliente pregunta si hay disponibilidad para una fecha/franja horaria concreta (con o sin intención de compra explícita). Cualquier mención de un día, fecha o "¿tenéis libre...?" entra aquí, incluso si el resto del mensaje es breve.
+- lead_potencial: muestra intención de compra o solicita presupuesto/contacto comercial, sin ser específicamente una pregunta de disponibilidad de fecha.
 
-Responde ÚNICAMENTE con una de las tres palabras: spam, informativa o lead_potencial.
+Responde ÚNICAMENTE con una de estas palabras: spam, informativa, consulta_disponibilidad o lead_potencial.
 `.trim();
 
 export async function clasificarIntencion(mensajeCliente: string): Promise<Intencion> {
@@ -26,6 +27,7 @@ export async function clasificarIntencion(mensajeCliente: string): Promise<Inten
     .toLowerCase();
 
   if (texto.includes("spam")) return "spam";
+  if (texto.includes("consulta_disponibilidad")) return "consulta_disponibilidad";
   if (texto.includes("lead_potencial")) return "lead_potencial";
   return "informativa";
 }

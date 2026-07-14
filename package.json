@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test:e2e": "tsx src/scripts/testEndToEnd.ts",
-    "seed:empresa-ejemplo": "tsx src/scripts/seedEmpresaEjemplo.ts"
+    "test:espailalira": "tsx src/scripts/testEspaiLaLira.ts",
+    "seed:empresa-ejemplo": "tsx src/scripts/seedEmpresaEjemplo.ts",
+    "seed:espailalira": "tsx src/scripts/seedEspaiLaLira.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
