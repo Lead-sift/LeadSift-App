@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Cola de revisión</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; background: #fafafa; }
+  h1 { font-size: 1.3rem; }
+  .tarjeta { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+  .meta { font-size: 0.8rem; color: #666; margin-bottom: 0.5rem; }
+  .lead { background: #f2f7ff; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem; margin-bottom: 0.75rem; }
+  textarea { width: 100%; min-height: 100px; font-family: inherit; font-size: 0.95rem; padding: 0.5rem; box-sizing: border-box; }
+  .acciones { margin-top: 0.5rem; display: flex; gap: 0.5rem; }
+  button { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+  .aprobar { background: #1a9f4d; color: white; }
+  .rechazar { background: #c0392b; color: white; }
+  .vacio { color: #666; text-align: center; margin-top: 3rem; }
+</style>
+</head>
+<body>
+  <h1>Cola de revisión — mensajes pendientes</h1>
+  <div id="lista"></div>
+
+  <script>
+    async function cargar() {
+      const res = await fetch('/api/revision/pendientes');
+      const mensajes = await res.json();
+      const lista = document.getElementById('lista');
+      lista.innerHTML = '';
+
+      if (mensajes.length === 0) {
+        lista.innerHTML = '<p class="vacio">No hay mensajes pendientes de revisión.</p>';
+        return;
+      }
+
+      for (const m of mensajes) {
+        const conv = m.conversaciones;
+        const empresa = conv?.empresas?.nombre ?? '—';
+        const lead = m.lead;
+
+        const div = document.createElement('div');
+        div.className = 'tarjeta';
+        div.innerHTML = `
+          <div class="meta">${empresa} · canal: ${conv?.canal ?? '—'} · de: ${conv?.remitente_contacto ?? '—'}</div>
+          ${lead ? `<div class="lead">
+            <strong>Lead:</strong> ${lead.necesidad ?? 'sin descripción'}<br>
+            Score: <strong>${lead.score}</strong> · Urgencia: ${lead.urgencia ?? '—'} · Contacto: ${lead.contacto ?? '—'}
+          </div>` : ''}
+          <textarea id="texto-${m.id}">${m.contenido}</textarea>
+          <div class="acciones">
+            <button class="aprobar" onclick="decidir('${m.id}', 'aprobar')">Aprobar y enviar</button>
+            <button class="rechazar" onclick="decidir('${m.id}', 'rechazar')">Rechazar</button>
+          </div>
+        `;
+        lista.appendChild(div);
+      }
+    }
+
+    async function decidir(mensajeId, accion) {
+      const textarea = document.getElementById('texto-' + mensajeId);
+      const body = { accion };
+      if (accion === 'aprobar') {
+        body.contenidoEditado = textarea.value;
+      }
+      await fetch(`/api/revision/${mensajeId}/decidir`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      cargar();
+    }
+
+    cargar();
+  </script>
+</body>
+</html>

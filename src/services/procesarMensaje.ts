@@ -1,6 +1,7 @@
 import { supabase } from "./supabaseClient.js";
 import { clasificarIntencion } from "./clasificador.js";
 import { cualificarLead } from "./cualificador.js";
+import { generarRespuestaInformativa } from "./responderInformativa.js";
 import { construirPromptSistema, type ConfigEmpresa } from "../prompts/plantillaBase.js";
 
 export interface MensajeEntrante {
@@ -35,15 +36,24 @@ export async function procesarMensajeEntrante(
   });
 
   const intencion = await clasificarIntencion(mensaje.texto);
+  const promptSistema = construirPromptSistema(configEmpresa);
 
-  const requiereCualificacion =
-    intencion === "lead_potencial" || intencion === "consulta_disponibilidad";
-
-  if (!requiereCualificacion) {
+  if (intencion === "spam") {
     return { conversacionId: conversacion.id, intencion, lead: null };
   }
 
-  const promptSistema = construirPromptSistema(configEmpresa);
+  if (intencion === "informativa") {
+    const respuesta = await generarRespuestaInformativa(promptSistema, mensaje.texto);
+    await supabase.from("mensajes").insert({
+      conversacion_id: conversacion.id,
+      origen: "ia",
+      contenido: respuesta,
+      requiere_aprobacion: false, // bajo riesgo: se envía automáticamente
+      aprobado: true,
+    });
+    return { conversacionId: conversacion.id, intencion, lead: null, respuesta };
+  }
+
   const ficha = await cualificarLead(promptSistema, mensaje.texto);
 
   const { data: lead, error: errorLead } = await supabase
