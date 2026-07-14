@@ -2,7 +2,6 @@ import { supabase } from "./supabaseClient.js";
 import { clasificarIntencion } from "./clasificador.js";
 import { cualificarLead } from "./cualificador.js";
 import { generarRespuestaInformativa } from "./responderInformativa.js";
-import { construirPromptSistema, type ConfigEmpresa } from "../prompts/plantillaBase.js";
 
 export interface MensajeEntrante {
   empresaId: string;
@@ -13,7 +12,7 @@ export interface MensajeEntrante {
 
 export async function procesarMensajeEntrante(
   mensaje: MensajeEntrante,
-  configEmpresa: ConfigEmpresa
+  promptSistema: string
 ) {
   const { data: conversacion, error: errorConversacion } = await supabase
     .from("conversaciones")
@@ -36,7 +35,6 @@ export async function procesarMensajeEntrante(
   });
 
   const intencion = await clasificarIntencion(mensaje.texto);
-  const promptSistema = construirPromptSistema(configEmpresa);
 
   if (intencion === "spam") {
     return { conversacionId: conversacion.id, intencion, lead: null };

@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { procesarMensajeEntrante } from "../services/procesarMensaje.js";
-import { empresaEjemplo } from "../prompts/plantillaBase.js";
+import { cargarPromptSistemaActivo } from "../services/cargarConfigEmpresa.js";
 
 // Uso: EMPRESA_ID=<uuid de seedEmpresaEjemplo.ts> npm run test:e2e
 async function main() {
@@ -10,6 +10,8 @@ async function main() {
       "Define EMPRESA_ID con el id devuelto por seedEmpresaEjemplo.ts"
     );
   }
+
+  const promptSistema = await cargarPromptSistemaActivo(empresaId);
 
   const mensajesDePrueba = [
     {
@@ -30,7 +32,7 @@ async function main() {
   for (const mensaje of mensajesDePrueba) {
     console.log("\n--- Procesando mensaje ---");
     console.log(mensaje.texto);
-    const resultado = await procesarMensajeEntrante(mensaje, empresaEjemplo);
+    const resultado = await procesarMensajeEntrante(mensaje, promptSistema);
     console.log("Intención:", resultado.intencion);
     console.log("Resultado:", JSON.stringify(resultado, null, 2));
   }

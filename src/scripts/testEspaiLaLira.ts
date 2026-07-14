@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { procesarMensajeEntrante } from "../services/procesarMensaje.js";
-import { espaiLaLira } from "../prompts/plantillaBase.js";
+import { cargarPromptSistemaActivo } from "../services/cargarConfigEmpresa.js";
 
 // Uso: EMPRESA_ID=<uuid de seedEspaiLaLira.ts> npm run test:espailalira
 async function main() {
@@ -8,6 +8,8 @@ async function main() {
   if (!empresaId) {
     throw new Error("Define EMPRESA_ID con el id devuelto por seedEspaiLaLira.ts");
   }
+
+  const promptSistema = await cargarPromptSistemaActivo(empresaId);
 
   const mensajesDePrueba = [
     {
@@ -41,7 +43,7 @@ async function main() {
   for (const mensaje of mensajesDePrueba) {
     console.log("\n--- Procesando mensaje ---");
     console.log(mensaje.texto);
-    const resultado = await procesarMensajeEntrante(mensaje, espaiLaLira);
+    const resultado = await procesarMensajeEntrante(mensaje, promptSistema);
     console.log("Intención:", resultado.intencion);
     console.log("Resultado:", JSON.stringify(resultado, null, 2));
   }

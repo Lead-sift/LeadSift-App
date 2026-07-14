@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { procesarMensajeEntrante } from "../services/procesarMensaje.js";
-import { empresaEjemplo } from "../prompts/plantillaBase.js";
+import { cargarPromptSistemaActivo } from "../services/cargarConfigEmpresa.js";
 
 export const ingestaRouter = Router();
 
@@ -19,9 +19,8 @@ ingestaRouter.post("/", async (req, res) => {
   }
 
   try {
-    // TODO: sustituir empresaEjemplo por la configuración real cargada
-    // desde la tabla `empresas` a partir de parseo.data.empresaId.
-    const resultado = await procesarMensajeEntrante(parseo.data, empresaEjemplo);
+    const promptSistema = await cargarPromptSistemaActivo(parseo.data.empresaId);
+    const resultado = await procesarMensajeEntrante(parseo.data, promptSistema);
     res.json(resultado);
   } catch (error) {
     console.error(error);

@@ -10,7 +10,8 @@
     "test:e2e": "tsx src/scripts/testEndToEnd.ts",
     "test:espailalira": "tsx src/scripts/testEspaiLaLira.ts",
     "seed:empresa-ejemplo": "tsx src/scripts/seedEmpresaEjemplo.ts",
-    "seed:espailalira": "tsx src/scripts/seedEspaiLaLira.ts"
+    "seed:espailalira": "tsx src/scripts/seedEspaiLaLira.ts",
+    "limpiar:datos-prueba": "tsx src/scripts/limpiarDatosPrueba.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
