@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Tamiz Comercial — Filtramos tus consultas, tú te quedas con las ventas</title>
+<title>Tamiz Comercial — Filtra y cualifica tus leads comerciales | Barcelona</title>
+<meta name="description" content="Recibimos las consultas de tus clientes, separamos el interés real del ruido y te entregamos solo los leads cualificados. Sin contratar personal comercial extra.">
 <style>
   :root {
     --azul: #1a4d8f;
@@ -18,40 +19,63 @@
     margin: 0;
     color: #222;
     background: var(--fondo);
+    line-height: 1.55;
   }
-  header {
+  a { color: var(--azul); }
+  header.hero {
     background: linear-gradient(135deg, var(--azul), var(--azul-oscuro));
     color: white;
-    padding: 4rem 1.5rem 5rem;
+    padding: 4.5rem 1.5rem 5rem;
     text-align: center;
   }
-  header h1 { font-size: 2.2rem; margin-bottom: 0.75rem; }
-  header p { font-size: 1.15rem; opacity: 0.92; max-width: 600px; margin: 0 auto; }
+  header.hero h1 { font-size: 2.3rem; margin-bottom: 0.9rem; }
+  header.hero p.subtitulo { font-size: 1.2rem; opacity: 0.94; max-width: 620px; margin: 0 auto 2rem; }
+  .cta-grupo { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 0.8rem 1.6rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primario { background: var(--verde); color: white; }
+  .btn-secundario { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.5); }
+
   .contenedor { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
   section.bloque { padding: 3.5rem 0; }
-  h2 { font-size: 1.6rem; text-align: center; margin-bottom: 2rem; }
+  section.bloque.alterno { background: white; }
+  h2 { font-size: 1.7rem; text-align: center; margin-bottom: 0.5rem; }
+  p.intro-seccion { text-align: center; color: var(--gris); max-width: 600px; margin: 0 auto 2rem; }
+
   .como-funciona {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
   }
-  .paso {
-    background: white;
-    border-radius: 10px;
-    padding: 1.5rem;
-    border: 1px solid #e5e5e5;
-  }
+  .paso { background: var(--fondo); border-radius: 10px; padding: 1.5rem; border: 1px solid #e5e5e5; }
   .paso .numero {
-    display: inline-block;
-    width: 28px; height: 28px;
-    background: var(--azul);
-    color: white;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 28px;
-    font-weight: bold;
-    margin-bottom: 0.75rem;
+    display: inline-block; width: 28px; height: 28px;
+    background: var(--azul); color: white; border-radius: 50%;
+    text-align: center; line-height: 28px; font-weight: bold; margin-bottom: 0.75rem;
   }
+
+  .beneficios { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
+  .beneficio { padding: 1.25rem; }
+  .beneficio h3 { font-size: 1.05rem; margin-bottom: 0.4rem; color: var(--azul-oscuro); }
+  .beneficio p { font-size: 0.95rem; color: #444; margin: 0; }
+
+  .credibilidad {
+    background: #eef3fb;
+    border-radius: 10px;
+    padding: 1.5rem 1.75rem;
+    text-align: center;
+    font-size: 1.02rem;
+    color: var(--azul-oscuro);
+  }
+
   .demo-caja {
     background: white;
     border-radius: 12px;
@@ -60,117 +84,178 @@
     border: 1px solid #e5e5e5;
   }
   .demo-caja p.aviso { font-size: 0.85rem; color: var(--gris); margin-top: -0.5rem; margin-bottom: 1.25rem; }
+  label[for="demo-input"] { display: block; font-weight: 600; margin-bottom: 0.4rem; }
   textarea#demo-input {
-    width: 100%;
-    min-height: 90px;
-    padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-family: inherit;
-    font-size: 1rem;
+    width: 100%; min-height: 90px; padding: 0.75rem;
+    border-radius: 8px; border: 1px solid #ccc; font-family: inherit; font-size: 1rem;
   }
   button#demo-enviar {
-    margin-top: 0.75rem;
-    background: var(--verde);
-    color: white;
-    border: none;
-    padding: 0.7rem 1.4rem;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
+    margin-top: 0.75rem; background: var(--verde); color: white; border: none;
+    padding: 0.7rem 1.4rem; border-radius: 8px; font-size: 1rem; cursor: pointer;
   }
   button#demo-enviar:disabled { opacity: 0.6; cursor: not-allowed; }
   .ejemplos { margin-top: 0.75rem; font-size: 0.85rem; }
   .ejemplos button {
-    background: #eef3fb;
-    border: 1px solid #cddcf0;
-    color: var(--azul-oscuro);
-    border-radius: 6px;
-    padding: 0.3rem 0.6rem;
-    margin: 0.2rem 0.3rem 0.2rem 0;
-    cursor: pointer;
-    font-size: 0.8rem;
+    background: #eef3fb; border: 1px solid #cddcf0; color: var(--azul-oscuro);
+    border-radius: 6px; padding: 0.3rem 0.6rem; margin: 0.2rem 0.3rem 0.2rem 0;
+    cursor: pointer; font-size: 0.8rem;
   }
   #demo-resultado { margin-top: 1.5rem; }
-  .resultado-tarjeta {
-    background: #f4f8ff;
-    border-left: 4px solid var(--azul);
-    border-radius: 6px;
-    padding: 1rem 1.25rem;
-  }
+  .resultado-tarjeta { background: #f4f8ff; border-left: 4px solid var(--azul); border-radius: 6px; padding: 1rem 1.25rem; }
   .resultado-tarjeta.spam { border-left-color: #999; background: #f5f5f5; }
   .etiqueta {
-    display: inline-block;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    background: var(--azul);
-    color: white;
-    padding: 0.15rem 0.6rem;
-    border-radius: 20px;
-    margin-bottom: 0.6rem;
+    display: inline-block; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;
+    background: var(--azul); color: white; padding: 0.15rem 0.6rem; border-radius: 20px; margin-bottom: 0.6rem;
   }
   .ficha-lead div { margin-bottom: 0.35rem; font-size: 0.95rem; }
-  footer { text-align: center; padding: 2.5rem 1.5rem; color: var(--gris); font-size: 0.85rem; }
+  .legal-aviso { font-size: 0.8rem; color: var(--gris); margin-top: 0.75rem; }
+  .legal-aviso a { color: var(--gris); text-decoration: underline; }
+
+  footer.pie {
+    background: var(--azul-oscuro);
+    color: rgba(255,255,255,0.85);
+    text-align: center;
+    padding: 2rem 1.5rem;
+    font-size: 0.85rem;
+  }
+  footer.pie a { color: white; margin: 0 0.6rem; }
+
+  .whatsapp-flotante {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: #25D366;
+    color: white;
+    border-radius: 50px;
+    padding: 0.8rem 1.2rem;
+    text-decoration: none;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+    z-index: 500;
+    font-size: 0.95rem;
+  }
+
+  #banner-cookies {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #1b1b1b;
+    color: #eee;
+    padding: 1rem 1.5rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    z-index: 1000;
+    font-size: 0.9rem;
+  }
+  #banner-cookies a { color: #9fc4ff; }
+  #banner-cookies button {
+    background: var(--verde); color: white; border: none; padding: 0.5rem 1.1rem;
+    border-radius: 6px; cursor: pointer; font-weight: 600;
+  }
+  #banner-cookies button.rechazar { background: transparent; border: 1px solid #999; color: #ccc; }
 </style>
 </head>
 <body>
 
-<header>
+<header class="hero">
   <div class="contenedor">
-    <h1>Tamiz Comercial</h1>
-    <p>Recibimos las consultas de tus clientes, separamos el interés real del ruido, y solo te llega lo que de verdad importa. Te ahorras un comercial dedicado a filtrar; te quedamos nosotros como refuerzo.</p>
+    <h1>Nunca más pierdas una venta por no contestar a tiempo</h1>
+    <p class="subtitulo">Recibimos las consultas de tus clientes por email, formulario y WhatsApp, separamos el interés real del ruido, y te avisamos solo cuando hay una venta de verdad esperando.</p>
+    <div class="cta-grupo">
+      <a href="#demo" class="btn btn-primario">Pregúntanos y compruébalo tú mismo</a>
+      <a href="https://wa.me/34000000000" target="_blank" rel="noopener" class="btn btn-secundario">Hablar por WhatsApp</a>
+    </div>
   </div>
 </header>
 
 <section class="bloque contenedor">
-  <h2>Cómo funciona</h2>
-  <div class="como-funciona">
-    <div class="paso">
-      <span class="numero">1</span>
-      <p>Recibimos las consultas de tu web, formulario o WhatsApp, las 24 horas.</p>
-    </div>
-    <div class="paso">
-      <span class="numero">2</span>
-      <p>Filtramos: descartamos spam, respondemos lo informativo al momento, y cualificamos lo que es una oportunidad real.</p>
-    </div>
-    <div class="paso">
-      <span class="numero">3</span>
-      <p>Te avisamos solo con los leads que importan, con toda la información ya recogida: contacto, necesidad, urgencia.</p>
-    </div>
-    <div class="paso">
-      <span class="numero">4</span>
-      <p>Tú decides: te lo derivamos a tu equipo comercial, o lo gestionamos nosotros hasta el cierre.</p>
+  <h2>Cada consulta que tarda en contestarse es una venta que se va a otro</h2>
+  <p class="intro-seccion" style="text-align:left; max-width:100%;">
+    Un cliente potencial escribe. Pasan las horas. Nadie de tu equipo tiene tiempo de mirarlo hasta el día siguiente — y para entonces ya ha llamado a la competencia.
+    <br><br>
+    Contestar en los primeros 5 minutos multiplica hasta por 8-10 la probabilidad de cerrar la venta frente a esperar una hora. Pero contratar a alguien solo para vigilar el email, el formulario y el WhatsApp todo el día no es rentable para una pyme — y la mayoría de esas consultas, además, ni siquiera son una oportunidad real: son curiosidad, spam, o preguntas que se responden solas.
+    <br><br>
+    El resultado: o pierdes tiempo revisando de todo, o pierdes ventas por no llegar a tiempo. Las dos opciones cuestan dinero.
+  </p>
+</section>
+
+<section class="bloque alterno">
+  <div class="contenedor">
+    <h2>Así te quitamos ese peso de encima</h2>
+    <p class="intro-seccion">Cuatro pasos, sin que tengas que cambiar cómo trabajas hoy.</p>
+    <div class="como-funciona">
+      <div class="paso"><span class="numero">1</span><p><strong>Recibimos</strong> — Conectamos con tu email, tu formulario web y tu WhatsApp. Todas las consultas entran por un único sitio, a cualquier hora.</p></div>
+      <div class="paso"><span class="numero">2</span><p><strong>Tamizamos</strong> — Descartamos spam, respondemos al momento lo que es solo una duda, y detectamos lo que es una oportunidad real.</p></div>
+      <div class="paso"><span class="numero">3</span><p><strong>Te avisamos</strong> — Solo te llega lo que importa, con toda la información ya recogida: quién es, qué necesita, con qué urgencia.</p></div>
+      <div class="paso"><span class="numero">4</span><p><strong>Tú decides</strong> — Te lo derivamos a tu equipo comercial, o lo gestionamos nosotros hasta el cierre.</p></div>
     </div>
   </div>
 </section>
 
 <section class="bloque contenedor">
-  <h2>Pruébalo tú mismo</h2>
-  <div class="demo-caja">
-    <p class="aviso">
-      Ejemplo de demostración: así respondería Tamiz a una consulta de alquiler de una sala de fiestas. Escribe tu propia consulta como si fueras un cliente potencial.
-    </p>
-    <textarea id="demo-input" placeholder="Ej: Hola, quiero reservar para el cumpleaños de mi hijo, seríamos 15 niños, ¿qué precio tendría?"></textarea>
-    <div class="ejemplos">
-      <button type="button" onclick="rellenarEjemplo(0)">Ejemplo: cumpleaños</button>
-      <button type="button" onclick="rellenarEjemplo(1)">Ejemplo: consulta de horario</button>
-      <button type="button" onclick="rellenarEjemplo(2)">Ejemplo: spam</button>
-    </div>
-    <br>
-    <button id="demo-enviar" onclick="enviarDemo()">Probar</button>
-    <div id="demo-resultado"></div>
+  <h2>Lo que cambia para tu negocio</h2>
+  <div class="beneficios">
+    <div class="beneficio"><h3>Te ahorras un puesto comercial</h3><p>No necesitas contratar a nadie solo para leer consultas y decidir cuáles valen la pena.</p></div>
+    <div class="beneficio"><h3>Disponibilidad real, 24 horas</h3><p>Un cliente que escribe un sábado por la noche recibe respuesta igual que uno que escribe un martes a mediodía.</p></div>
+    <div class="beneficio"><h3>Dejas de perder ventas</h3><p>La respuesta inmediata deja de depender de que alguien de tu equipo esté libre en ese momento.</p></div>
+    <div class="beneficio"><h3>Tu equipo se centra en lo que importa</h3><p>Nada de perder horas descartando spam: a ti solo te llegan las oportunidades reales.</p></div>
   </div>
 </section>
 
-<footer>
-  Tamiz Comercial — filtramos tus consultas comerciales para que solo llegue lo que importa.
+<section class="bloque alterno">
+  <div class="contenedor">
+    <div class="credibilidad">
+      Así funciona con clientes reales. Este mismo sistema es el que usamos hoy para gestionar consultas comerciales — no es una maqueta ni una demo aislada, es el producto real funcionando.
+    </div>
+  </div>
+</section>
+
+<section class="bloque contenedor" id="demo">
+  <h2>Pregúntanos por nuestros propios servicios y precios</h2>
+  <p class="intro-seccion">Compruébalo con tus propios ojos: escribe como si fueras un cliente interesado en Tamiz Comercial y mira cómo respondemos, en vivo.</p>
+  <div class="demo-caja">
+    <label for="demo-input">Escribe tu consulta</label>
+    <p class="aviso">
+      Esto es una demo en vivo: tu mensaje se procesa con el mismo sistema que usarían tus clientes. No se envía a ningún comercial ni se guarda como lead real.
+    </p>
+    <textarea id="demo-input" placeholder="Ej: Hola, ¿cuánto cuesta el servicio y qué incluye?"></textarea>
+    <div class="ejemplos">
+      <button type="button" onclick="rellenarEjemplo(0)">Ejemplo: precio del servicio</button>
+      <button type="button" onclick="rellenarEjemplo(1)">Ejemplo: cómo funciona</button>
+      <button type="button" onclick="rellenarEjemplo(2)">Ejemplo: spam</button>
+    </div>
+    <br>
+    <button id="demo-enviar" onclick="enviarDemo()">Probar ahora</button>
+    <div id="demo-resultado"></div>
+    <p class="legal-aviso">Al enviar tu consulta aceptas nuestra <a href="/privacidad.html">Política de Privacidad</a>. No usamos tus datos para nada distinto de mostrarte esta demo.</p>
+  </div>
+</section>
+
+<footer class="pie">
+  <div>Tamiz Comercial — filtramos tus consultas comerciales para que solo llegue lo que importa.</div>
+  <div style="margin-top:0.75rem;">
+    <a href="/aviso-legal.html">Aviso legal</a>
+    <a href="/privacidad.html">Privacidad</a>
+    <a href="/cookies.html">Cookies</a>
+  </div>
 </footer>
+
+<a href="https://wa.me/34000000000" target="_blank" rel="noopener" class="whatsapp-flotante">💬 WhatsApp</a>
+
+<div id="banner-cookies">
+  <span>Usamos cookies técnicas necesarias para el funcionamiento de la web. No usamos cookies de analítica ni publicidad de terceros. Más info en nuestra <a href="/cookies.html">política de cookies</a>.</span>
+  <div>
+    <button onclick="decidirCookies(true)">Aceptar</button>
+    <button class="rechazar" onclick="decidirCookies(false)">Rechazar</button>
+  </div>
+</div>
 
 <script>
   const ejemplos = [
-    "Hola, quiero reservar la sala para el cumpleaños de mi hija, seríamos unos 18 niños, un sábado por la tarde. ¿Qué precio tendría?",
-    "Hola, ¿cuál es el horario de atención por WhatsApp?",
+    "Hola, ¿cuánto cuesta el servicio y qué incluye?",
+    "¿Cómo funciona exactamente? ¿Vosotros contestáis a mis clientes o solo me avisáis?",
     "Gana dinero rápido invirtiendo en criptomonedas, escríbenos ya!!!"
   ];
 
@@ -183,11 +268,10 @@
     const boton = document.getElementById('demo-enviar');
     const resultado = document.getElementById('demo-resultado');
     const texto = input.value.trim();
-
     if (!texto) return;
 
     boton.disabled = true;
-    boton.textContent = 'Analizando...';
+    boton.textContent = 'Analizando tu consulta...';
     resultado.innerHTML = '';
 
     try {
@@ -208,25 +292,17 @@
       resultado.innerHTML = '<div class="resultado-tarjeta"><p>Error de conexión. Inténtalo de nuevo.</p></div>';
     } finally {
       boton.disabled = false;
-      boton.textContent = 'Probar';
+      boton.textContent = 'Probar ahora';
     }
   }
 
   function renderizarResultado(datos) {
     if (datos.intencion === 'spam') {
-      return `<div class="resultado-tarjeta spam">
-        <span class="etiqueta">Descartado como spam</span>
-        <p>${datos.mensaje}</p>
-      </div>`;
+      return `<div class="resultado-tarjeta spam"><span class="etiqueta">Descartado como spam</span><p>${datos.mensaje}</p></div>`;
     }
-
     if (datos.intencion === 'informativa') {
-      return `<div class="resultado-tarjeta">
-        <span class="etiqueta">Consulta informativa — respondida al instante</span>
-        <p>${datos.respuesta}</p>
-      </div>`;
+      return `<div class="resultado-tarjeta"><span class="etiqueta">Consulta informativa — respondida al instante</span><p>${datos.respuesta}</p></div>`;
     }
-
     const f = datos.ficha;
     const etiquetaIntencion = datos.intencion === 'consulta_disponibilidad' ? 'Consulta de disponibilidad' : 'Lead potencial';
     return `<div class="resultado-tarjeta">
@@ -239,6 +315,15 @@
       </div>
       <p style="margin-top:0.75rem;"><strong>Respuesta que se enviaría:</strong><br>${f.respuestaSugerida}</p>
     </div>`;
+  }
+
+  // Banner de cookies: solo cookies técnicas hoy, sin analítica de terceros.
+  function decidirCookies(aceptado) {
+    localStorage.setItem('tamiz_cookies_decision', aceptado ? 'aceptado' : 'rechazado');
+    document.getElementById('banner-cookies').style.display = 'none';
+  }
+  if (!localStorage.getItem('tamiz_cookies_decision')) {
+    document.getElementById('banner-cookies').style.display = 'flex';
   }
 </script>
 

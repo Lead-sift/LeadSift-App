@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { clasificarIntencion } from "../services/clasificador.js";
 import { cualificarLead } from "../services/cualificador.js";
 import { generarRespuestaInformativa } from "../services/responderInformativa.js";
-import { construirPromptSistema, salaEventosDemo } from "../prompts/plantillaBase.js";
+import { construirPromptSistema, tamizComercial } from "../prompts/plantillaBase.js";
 
 export const demoRouter = Router();
 
@@ -22,11 +22,12 @@ const esquemaDemo = z.object({
   texto: z.string().min(1).max(1000),
 });
 
-const promptDemo = construirPromptSistema(salaEventosDemo);
+const promptDemo = construirPromptSistema(tamizComercial);
 
 // Endpoint sin estado: no escribe en Supabase ni dispara notificaciones.
-// Solo demuestra en vivo la clasificación y cualificación de un mensaje,
-// usando un caso ficticio de ejemplo (no corresponde a ningún cliente real).
+// El visitante pregunta por los propios servicios/precios de Tamiz
+// Comercial, y el sistema responde en vivo con esa información real —
+// es a la vez la demo del producto y un canal de captación de leads.
 demoRouter.post("/", limitadorDemo, async (req, res) => {
   const parseo = esquemaDemo.safeParse(req.body);
   if (!parseo.success) {

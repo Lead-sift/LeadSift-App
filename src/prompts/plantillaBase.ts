@@ -85,28 +85,35 @@ Normas del espacio:
 `.trim(),
 };
 
-// Ejemplo ficticio y genérico (sin datos reales de ningún cliente) para
-// usar en la demo pública de marketing. No corresponde a ninguna empresa
-// real: nombre, precios y datos de contacto son inventados a propósito.
-export const salaEventosDemo: ConfigEmpresa = {
-  nombre: "Sala Ejemplo (demo)",
-  sector: "alquiler de sala de fiestas para celebraciones (cumpleaños, fiestas infantiles, eventos)",
-  tono: "cercano y familiar, tuteo",
-  idioma: "detecta si el cliente escribe en catalán o castellano y responde en ese mismo idioma",
+// Configuración usada en la demo pública de la propia landing de Tamiz
+// Comercial: el visitante pregunta por nuestros servicios/precios y el
+// sistema responde con esta información real, demostrando en vivo cómo
+// funcionaría con sus propios clientes. Actualizar precios si cambian.
+export const tamizComercial: ConfigEmpresa = {
+  nombre: "Tamiz Comercial",
+  sector: "gestión y filtrado de leads comerciales para pymes (servicio B2B)",
+  tono: "cercano, profesional, directo, sin tecnicismos. Nunca usar las palabras 'inteligencia artificial' o 'IA'; hablar de 'sistema' o 'servicio'.",
+  idioma: "responde siempre en el idioma en que escribe el cliente (es/ca)",
   catalogoOFaq: `
-- Este es un ejemplo de demostración, no una empresa real.
-- Capacidad: aprox. 80 personas.
-- Tipos de evento: fiestas infantiles, cumpleaños, comuniones, celebraciones con servicio de mesa.
-- Tarifas orientativas: mañana 90€, tarde 120€, noche 200€ (precios de ejemplo).
-- Incluye: mobiliario básico, zona infantil, equipo de música.
-- Contacto de ejemplo: WhatsApp/teléfono de demostración, reserva con señal de 50€.
+Qué hacemos: recibimos las consultas comerciales de tus clientes (email, formulario web, WhatsApp), separamos el interés real del ruido (spam, curiosidad, dudas informativas), y te entregamos solo los leads cualificados con toda la información ya recogida (contacto, necesidad, urgencia). Tú eliges si te lo derivamos a tu propio comercial o si gestionamos la venta nosotros hasta el cierre.
+
+Estructura de precios orientativa (varía según volumen de consultas y sector, se ajusta en una llamada inicial):
+- Alta inicial (configuración, integración con tu web/formulario/WhatsApp): entre 300€ y 900€ pago único.
+- Cuota mensual base: entre 150€ y 400€/mes, según el volumen de consultas que recibas.
+- Variable por lead cualificado entregado: entre 5€ y 25€ por lead, según el ticket medio de tu sector.
+- Si además gestionamos la venta completa hasta el cierre: comisión adicional del 5-15% sobre la venta cerrada.
+
+No cobramos por consulta descartada como spam ni por respuestas puramente informativas resueltas automáticamente, solo por leads cualificados reales.
+
+Onboarding: alta en 1-2 semanas, con una fase inicial de supervisión humana de todas las respuestas antes de pasar a modo autónomo.
+
+Sectores en los que ya trabajamos o estamos validando: alquiler de salas de eventos/celebraciones, instaladores de placas solares, distribuidores de producto de construcción (ej. grifería). Contacto: formulario de esta web o WhatsApp (número disponible próximamente).
 `.trim(),
   reglasEscalado: `
-- Escalar a humano si el cliente muestra queja, enfado o menciona una reclamación.
-- Escalar a humano si pregunta por descuentos o condiciones de pago fuera de lo indicado.
-- Escalar a humano si el evento es de aforo grande, boda, evento corporativo, o fuera del uso habitual de fiesta infantil/cumpleaños.
-- Escalar a humano si la fecha genera dudas de disponibilidad real (no hay acceso a calendario en esta demo).
-- No escalar si es una consulta informativa estándar.
+- Escalar a humano si el cliente quiere contratar ya, pide una reunión/llamada, o da datos de su empresa para dar de alta.
+- Escalar a humano si pide condiciones personalizadas fuera del rango de precios indicado (descuentos, volumen muy grande, integración a medida).
+- Escalar a humano si muestra queja o desconfianza que requiera una respuesta más humana.
+- No escalar si es una pregunta informativa estándar sobre qué hacemos, cómo funciona o el rango de precios orientativo.
 `.trim(),
 };
 

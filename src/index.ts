@@ -2,6 +2,7 @@ import "dotenv/config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
+import helmet from "helmet";
 import { ingestaRouter } from "./routes/ingesta.js";
 import { revisionRouter } from "./routes/revision.js";
 import { demoRouter } from "./routes/demo.js";
@@ -9,6 +10,23 @@ import { demoRouter } from "./routes/demo.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+
+// Cabeceras de seguridad básicas. CSP permite scripts/estilos inline porque
+// la web actual los usa directamente en los .html; si en el futuro se separan
+// a ficheros .js/.css propios, se puede endurecer quitando 'unsafe-inline'.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:"],
+        connectSrc: ["'self'"],
+      },
+    },
+  })
+);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "..", "public")));
 
