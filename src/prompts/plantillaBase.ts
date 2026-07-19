@@ -85,12 +85,12 @@ Normas del espacio:
 `.trim(),
 };
 
-// Configuración usada en la demo pública de la propia landing de Tamiz
-// Comercial: el visitante pregunta por nuestros servicios/precios y el
-// sistema responde con esta información real, demostrando en vivo cómo
+// Configuración usada en la demo pública de la propia landing de LeadSift:
+// el visitante pregunta por nuestros servicios/precios y el sistema
+// responde con esta información real, demostrando en vivo cómo
 // funcionaría con sus propios clientes. Actualizar precios si cambian.
-export const tamizComercial: ConfigEmpresa = {
-  nombre: "Tamiz Comercial",
+export const leadSift: ConfigEmpresa = {
+  nombre: "LeadSift",
   sector: "gestión y filtrado de leads comerciales para pymes (servicio B2B)",
   tono: "cercano, profesional, directo, sin tecnicismos. Nunca usar las palabras 'inteligencia artificial' o 'IA'; hablar de 'sistema' o 'servicio'.",
   idioma: "responde siempre en el idioma en que escribe el cliente (es/ca)",

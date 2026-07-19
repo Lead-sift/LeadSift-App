@@ -4,7 +4,7 @@ import rateLimit from "express-rate-limit";
 import { clasificarIntencion } from "../services/clasificador.js";
 import { cualificarLead } from "../services/cualificador.js";
 import { generarRespuestaInformativa } from "../services/responderInformativa.js";
-import { construirPromptSistema, tamizComercial } from "../prompts/plantillaBase.js";
+import { construirPromptSistema, leadSift } from "../prompts/plantillaBase.js";
 
 export const demoRouter = Router();
 
@@ -22,11 +22,11 @@ const esquemaDemo = z.object({
   texto: z.string().min(1).max(1000),
 });
 
-const promptDemo = construirPromptSistema(tamizComercial);
+const promptDemo = construirPromptSistema(leadSift);
 
 // Endpoint sin estado: no escribe en Supabase ni dispara notificaciones.
-// El visitante pregunta por los propios servicios/precios de Tamiz
-// Comercial, y el sistema responde en vivo con esa información real —
+// El visitante pregunta por los propios servicios/precios de LeadSift,
+// y el sistema responde en vivo con esa información real —
 // es a la vez la demo del producto y un canal de captación de leads.
 demoRouter.post("/", limitadorDemo, async (req, res) => {
   const parseo = esquemaDemo.safeParse(req.body);
