@@ -81,6 +81,7 @@ promptsAdminRouter.post("/:empresaId/directo", async (req, res) => {
       contenido: parseo.data.contenido,
       entorno: "produccion",
       activo: true,
+      activado_en: new Date().toISOString(),
       creado_por: req.perfil?.id ?? null,
     })
     .select()
@@ -104,7 +105,7 @@ promptsAdminRouter.post("/:empresaId/:promptId/publicar", async (req, res) => {
 
   const { data, error } = await supabase
     .from("prompts_sistema")
-    .update({ activo: true, entorno: "produccion" })
+    .update({ activo: true, entorno: "produccion", activado_en: new Date().toISOString() })
     .eq("id", promptId)
     .eq("empresa_id", empresaId)
     .select()

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Histórico de prompt — LeadSift</title>
+<style>
+  :root { --arcilla: #B54A2C; --arcilla-oscuro: #7A2F19; --gris: #7A6B5C; --borde: #eaded0; --crema: #FBF6EE; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: var(--crema); color: #2B2620; }
+  header { background: white; border-bottom: 1px solid var(--borde); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-size: 1.1rem; margin: 0; }
+  button { padding: 0.5rem 1rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; }
+  .cerrar { background: #eee; color: #222; }
+  .contenedor { display: grid; grid-template-columns: 280px 1fr; gap: 0; height: calc(100vh - 60px); }
+  .lista-versiones { border-right: 1px solid var(--borde); overflow-y: auto; background: white; }
+  .version-item { padding: 0.85rem 1rem; border-bottom: 1px solid var(--borde); cursor: pointer; font-size: 0.85rem; }
+  .version-item:hover { background: #faf5ee; }
+  .version-item.seleccionada { background: #f4ede4; border-left: 3px solid var(--arcilla); }
+  .version-item .num { font-weight: 700; }
+  .version-item .fecha { color: var(--gris); font-size: 0.78rem; margin-top: 0.2rem; }
+  .etiqueta-activo { background: #1a9f4d; color: white; font-size: 0.68rem; padding: 0.1rem 0.4rem; border-radius: 10px; margin-left: 0.3rem; }
+  .etiqueta-entorno { background: #999; color: white; font-size: 0.68rem; padding: 0.1rem 0.4rem; border-radius: 10px; margin-left: 0.3rem; }
+  .detalle { padding: 1.5rem; overflow-y: auto; }
+  .detalle-cabecera { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  pre { white-space: pre-wrap; background: white; border: 1px solid var(--borde); border-radius: 8px; padding: 1rem; font-size: 0.85rem; font-family: 'Consolas', monospace; }
+  .vacio { color: var(--gris); padding: 2rem; text-align: center; }
+</style>
+</head>
+<body>
+  <header>
+    <h1 id="titulo">Histórico de prompt</h1>
+    <button class="cerrar" onclick="window.close()">Cerrar</button>
+  </header>
+  <div class="contenedor">
+    <div class="lista-versiones" id="lista-versiones"></div>
+    <div class="detalle" id="detalle"><p class="vacio">Selecciona una versión de la lista para ver su contenido completo.</p></div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('leadsift_token');
+    if (!token) {
+      document.body.innerHTML = '<p style="padding:2rem;">Sesión no válida. Cierra esta pestaña y entra de nuevo desde el panel.</p>';
+      throw new Error('sin token');
+    }
+
+    const parametros = new URLSearchParams(window.location.search);
+    const empresaId = parametros.get('empresaId');
+    const nombreEmpresa = parametros.get('nombre') || '';
+    document.getElementById('titulo').textContent = `Histórico de prompt — ${nombreEmpresa}`;
+
+    async function cargar() {
+      const res = await fetch(`/api/admin/prompts/${empresaId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const versiones = await res.json();
+
+      const lista = document.getElementById('lista-versiones');
+      if (!versiones.length) {
+        lista.innerHTML = '<p class="vacio">Sin versiones todavía.</p>';
+        return;
+      }
+
+      lista.innerHTML = '';
+      for (const v of versiones) {
+        const item = document.createElement('div');
+        item.className = 'version-item';
+        item.id = `version-${v.id}`;
+        item.innerHTML = `
+          <span class="num">v${v.version}</span>
+          <span class="etiqueta-entorno">${v.entorno}</span>
+          ${v.activo ? '<span class="etiqueta-activo">activo</span>' : ''}
+          <div class="fecha">Alta: ${new Date(v.created_at).toLocaleString('es-ES')}</div>
+          <div class="fecha">Modificación: ${v.activado_en ? new Date(v.activado_en).toLocaleString('es-ES') : '— (nunca activado)'}</div>
+        `;
+        item.onclick = () => mostrarDetalle(v);
+        lista.appendChild(item);
+      }
+
+      // Mostrar la más reciente por defecto.
+      mostrarDetalle(versiones[0]);
+    }
+
+    function mostrarDetalle(v) {
+      document.querySelectorAll('.version-item').forEach((el) => el.classList.remove('seleccionada'));
+      document.getElementById(`version-${v.id}`)?.classList.add('seleccionada');
+
+      const detalle = document.getElementById('detalle');
+      detalle.innerHTML = `
+        <div class="detalle-cabecera">
+          <h2 style="margin:0; font-size:1.05rem;">
+            Versión ${v.version}
+            <span class="etiqueta-entorno">${v.entorno}</span>
+            ${v.activo ? '<span class="etiqueta-activo">activo</span>' : ''}
+          </h2>
+          <button onclick="copiarContenido()">Copiar</button>
+        </div>
+        <p style="font-size:0.85rem; color:var(--gris);">
+          Alta: ${new Date(v.created_at).toLocaleString('es-ES')} ·
+          Modificación: ${v.activado_en ? new Date(v.activado_en).toLocaleString('es-ES') : '— (nunca activado)'}
+        </p>
+        <pre id="contenido-version">${v.contenido.replace(/</g, '&lt;')}</pre>
+      `;
+    }
+
+    function copiarContenido() {
+      const texto = document.getElementById('contenido-version').textContent;
+      navigator.clipboard.writeText(texto);
+    }
+
+    cargar();
+  </script>
+</body>
+</html>

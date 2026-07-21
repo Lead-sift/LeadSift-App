@@ -547,6 +547,7 @@
         </p>
         <textarea id="servicios-prompt-contenido" rows="10" placeholder="Prompt de sistema..."></textarea>
         <button class="principal" style="margin-top:0.5rem;" onclick="guardarPromptServicios('${empresa.id}')">Guardar prompt</button>
+        <button class="secundario" style="margin-top:0.5rem;" onclick="abrirHistoricoPrompt('${empresa.id}', '${empresa.nombre.replace(/'/g, "\\'")}')">Histórico</button>
         <p id="mensaje-prompt-servicios" style="margin-top:0.5rem; font-size:0.9rem;"></p>
 
         <h3 style="margin-top:2rem;">Documentos de referencia</h3>
@@ -591,6 +592,11 @@
     const guardado = await api(`/api/admin/prompts/${empresaId}/directo`, { method: 'POST', body: JSON.stringify({ contenido }) });
     mensaje.textContent = `Guardado y activo — v${guardado.version}.`;
     cargarPromptServicios(empresaId);
+  }
+
+  function abrirHistoricoPrompt(empresaId, nombreEmpresa) {
+    const url = `/admin/historico-prompt.html?empresaId=${encodeURIComponent(empresaId)}&nombre=${encodeURIComponent(nombreEmpresa)}`;
+    window.open(url, '_blank', 'width=900,height=650');
   }
 
   async function cargarDocumentosServicios(empresaId) {
