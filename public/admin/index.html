@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Panel — LeadSift Admin</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; color: #222; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+  tr.fila-empresa { cursor: pointer; }
+  tr.fila-empresa:hover { background: #f7f9fc; }
+  .form-nueva { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
+  input, select, textarea { padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
+  button { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; background: #1a4d8f; color: white; }
+  button.secundario { background: #eee; color: #222; }
+  .panel-prompt { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-top: 1rem; display: none; }
+  .version-lista div.version { border-bottom: 1px solid #eee; padding: 0.5rem 0; font-size: 0.85rem; }
+  .etiqueta-activo { background: #1a9f4d; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 10px; margin-left: 0.4rem; }
+  .etiqueta-entorno { background: #999; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 10px; margin-left: 0.4rem; }
+  #salir { float: right; }
+</style>
+</head>
+<body>
+  <button id="salir" class="secundario" onclick="salir()">Salir</button>
+  <h1>Panel LeadSift — Clientes</h1>
+
+  <table id="tabla-empresas">
+    <thead><tr><th>Nombre</th><th>Sector</th><th>Activo</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Nueva empresa</h2>
+  <div class="form-nueva">
+    <input id="nueva-nombre" placeholder="Nombre" />
+    <input id="nueva-sector" placeholder="Sector" />
+    <input id="nueva-tono" placeholder="Tono (ej. cercano)" value="cercano" />
+    <input id="nueva-idioma" placeholder="Idioma (ej. es)" value="es" />
+    <button onclick="crearEmpresa()">Crear</button>
+  </div>
+
+  <div class="panel-prompt" id="panel-prompt">
+    <h2 id="prompt-titulo">Prompt de sistema</h2>
+    <div class="version-lista" id="version-lista"></div>
+    <h3>Nueva versión</h3>
+    <textarea id="prompt-contenido" rows="8" placeholder="Contenido del prompt..."></textarea>
+    <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
+      <select id="prompt-entorno">
+        <option value="sandbox">sandbox</option>
+        <option value="produccion">producción</option>
+      </select>
+      <button onclick="guardarVersion()">Guardar versión</button>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('leadsift_token');
+    if (!token) window.location.href = '/login.html';
+
+    let empresaSeleccionada = null;
+
+    async function api(ruta, opciones = {}) {
+      const res = await fetch(ruta, {
+        ...opciones,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          ...(opciones.headers || {}),
+        },
+      });
+      if (res.status === 401) {
+        localStorage.removeItem('leadsift_token');
+        window.location.href = '/login.html';
+        return null;
+      }
+      return res.json();
+    }
+
+    function salir() {
+      localStorage.removeItem('leadsift_token');
+      window.location.href = '/login.html';
+    }
+
+    async function cargarEmpresas() {
+      const empresas = await api('/api/admin/empresas');
+      const cuerpo = document.querySelector('#tabla-empresas tbody');
+      cuerpo.innerHTML = '';
+      for (const e of empresas) {
+        const fila = document.createElement('tr');
+        fila.className = 'fila-empresa';
+        fila.innerHTML = `<td>${e.nombre}</td><td>${e.sector}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
+        fila.onclick = () => abrirPrompt(e);
+        cuerpo.appendChild(fila);
+      }
+    }
+
+    async function crearEmpresa() {
+      const nombre = document.getElementById('nueva-nombre').value.trim();
+      const sector = document.getElementById('nueva-sector').value.trim();
+      const tono_comunicacion = document.getElementById('nueva-tono').value.trim();
+      const idioma_principal = document.getElementById('nueva-idioma').value.trim();
+      if (!nombre || !sector) return alert('Nombre y sector son obligatorios');
+
+      await api('/api/admin/empresas', {
+        method: 'POST',
+        body: JSON.stringify({ nombre, sector, tono_comunicacion, idioma_principal }),
+      });
+      document.getElementById('nueva-nombre').value = '';
+      document.getElementById('nueva-sector').value = '';
+      cargarEmpresas();
+    }
+
+    async function abrirPrompt(empresa) {
+      empresaSeleccionada = empresa;
+      document.getElementById('panel-prompt').style.display = 'block';
+      document.getElementById('prompt-titulo').textContent = `Prompt de sistema — ${empresa.nombre}`;
+      const versiones = await api(`/api/admin/prompts/${empresa.id}`);
+      const lista = document.getElementById('version-lista');
+      lista.innerHTML = versiones.length
+        ? ''
+        : '<p>Sin versiones todavía.</p>';
+
+      for (const v of versiones) {
+        const div = document.createElement('div');
+        div.className = 'version';
+        div.innerHTML = `
+          v${v.version}
+          <span class="etiqueta-entorno">${v.entorno}</span>
+          ${v.activo ? '<span class="etiqueta-activo">activo en producción</span>' : ''}
+          <div style="white-space:pre-wrap; margin:0.3rem 0; max-height:100px; overflow:auto; font-size:0.8rem; color:#555;">${v.contenido}</div>
+          ${!v.activo ? `<button class="secundario" onclick="publicarVersion('${v.id}')">Publicar</button>` : ''}
+        `;
+        lista.appendChild(div);
+      }
+    }
+
+    async function guardarVersion() {
+      const contenido = document.getElementById('prompt-contenido').value.trim();
+      const entorno = document.getElementById('prompt-entorno').value;
+      if (!contenido || !empresaSeleccionada) return;
+
+      await api(`/api/admin/prompts/${empresaSeleccionada.id}`, {
+        method: 'POST',
+        body: JSON.stringify({ contenido, entorno }),
+      });
+      document.getElementById('prompt-contenido').value = '';
+      abrirPrompt(empresaSeleccionada);
+    }
+
+    async function publicarVersion(promptId) {
+      if (!empresaSeleccionada) return;
+      await api(`/api/admin/prompts/${empresaSeleccionada.id}/${promptId}/publicar`, { method: 'POST' });
+      abrirPrompt(empresaSeleccionada);
+    }
+
+    cargarEmpresas();
+  </script>
+</body>
+</html>

@@ -10,7 +10,8 @@ import { webhookWhatsappRouter } from "./routes/webhookWhatsapp.js";
 import { empresasAdminRouter } from "./routes/admin/empresas.js";
 import { promptsAdminRouter } from "./routes/admin/prompts.js";
 import { portalRouter } from "./routes/portal/index.js";
-import { requiereInterno, requiereClientUser } from "./middleware/auth.js";
+import { authRouter } from "./routes/auth.js";
+import { requiereInterno, requiereClientUser, requiereSesion } from "./middleware/auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -42,6 +43,8 @@ app.use("/api/webhooks/whatsapp", webhookWhatsappRouter);
 app.use("/api/admin/empresas", requiereInterno, empresasAdminRouter);
 app.use("/api/admin/prompts", requiereInterno, promptsAdminRouter);
 app.use("/api/portal", requiereClientUser, portalRouter);
+app.use("/api/auth", authRouter);
+app.get("/api/me", requiereSesion, (req, res) => res.json(req.perfil));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });

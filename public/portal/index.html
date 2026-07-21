@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Mi panel — LeadSift</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; color: #222; }
+  h1 { font-size: 1.5rem; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+  .kpi { background: #f4f8ff; border-radius: 8px; padding: 1rem; text-align: center; }
+  .kpi .numero { font-size: 1.8rem; font-weight: bold; color: #1a4d8f; }
+  .kpi .etiqueta { font-size: 0.8rem; color: #666; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+  select, button { padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; }
+  button { background: #1a4d8f; color: white; border: none; cursor: pointer; }
+  #salir { float: right; background: #eee; color: #222; }
+</style>
+</head>
+<body>
+  <button id="salir" onclick="salir()">Salir</button>
+  <h1>Mi panel</h1>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2>Consultas</h2>
+  <div>
+    <select id="filtro-canal" onchange="cargarConsultas()">
+      <option value="">Todos los canales</option>
+      <option value="email">Email</option>
+      <option value="formulario">Formulario</option>
+      <option value="whatsapp">WhatsApp</option>
+    </select>
+    <button onclick="exportarCSV()">Exportar CSV</button>
+  </div>
+  <table id="tabla-consultas">
+    <thead><tr><th>Fecha</th><th>Canal</th><th>Contacto</th><th>Necesidad</th><th>Score</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const token = localStorage.getItem('leadsift_token');
+    if (!token) window.location.href = '/login.html';
+
+    let ultimasConsultas = [];
+
+    async function api(ruta) {
+      const res = await fetch(ruta, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.status === 401) {
+        localStorage.removeItem('leadsift_token');
+        window.location.href = '/login.html';
+        return null;
+      }
+      return res.json();
+    }
+
+    function salir() {
+      localStorage.removeItem('leadsift_token');
+      window.location.href = '/login.html';
+    }
+
+    async function cargarResumen() {
+      const r = await api('/api/portal/resumen');
+      document.getElementById('kpis').innerHTML = `
+        <div class="kpi"><div class="numero">${r.total}</div><div class="etiqueta">Leads totales</div></div>
+        <div class="kpi"><div class="numero">${r.calientes}</div><div class="etiqueta">Calientes</div></div>
+        <div class="kpi"><div class="numero">${r.templados}</div><div class="etiqueta">Templados</div></div>
+        <div class="kpi"><div class="numero">${r.frios}</div><div class="etiqueta">Fríos</div></div>
+      `;
+    }
+
+    async function cargarConsultas() {
+      const canal = document.getElementById('filtro-canal').value;
+      const query = canal ? `?canal=${canal}` : '';
+      const consultas = await api(`/api/portal/consultas${query}`);
+      ultimasConsultas = consultas;
+
+      const cuerpo = document.querySelector('#tabla-consultas tbody');
+      cuerpo.innerHTML = '';
+      for (const c of consultas) {
+        const lead = Array.isArray(c.leads) ? c.leads[0] : c.leads;
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+          <td>${new Date(c.created_at).toLocaleString('es-ES')}</td>
+          <td>${c.canal}</td>
+          <td>${c.remitente_contacto}</td>
+          <td>${lead?.necesidad ?? '—'}</td>
+          <td>${lead?.score ?? '—'}</td>
+        `;
+        cuerpo.appendChild(fila);
+      }
+    }
+
+    function exportarCSV() {
+      const filas = [['Fecha', 'Canal', 'Contacto', 'Necesidad', 'Score']];
+      for (const c of ultimasConsultas) {
+        const lead = Array.isArray(c.leads) ? c.leads[0] : c.leads;
+        filas.push([c.created_at, c.canal, c.remitente_contacto, lead?.necesidad ?? '', lead?.score ?? '']);
+      }
+      const csv = filas.map((f) => f.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const enlace = document.createElement('a');
+      enlace.href = URL.createObjectURL(blob);
+      enlace.download = 'consultas-leadsift.csv';
+      enlace.click();
+    }
+
+    cargarResumen();
+    cargarConsultas();
+  </script>
+</body>
+</html>

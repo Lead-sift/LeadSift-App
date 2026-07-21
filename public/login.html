@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Acceso — LeadSift</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 380px; margin: 4rem auto; padding: 0 1.5rem; }
+  h1 { font-size: 1.4rem; }
+  label { display: block; font-weight: 600; margin: 1rem 0 0.3rem; }
+  input { width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+  button { margin-top: 1.5rem; width: 100%; padding: 0.7rem; background: #1a4d8f; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+  button:disabled { opacity: 0.6; }
+  #error { color: #c0392b; font-size: 0.9rem; margin-top: 0.75rem; }
+</style>
+</head>
+<body>
+  <h1>Acceder</h1>
+  <label for="email">Email</label>
+  <input id="email" type="email" autocomplete="username" />
+  <label for="password">Contraseña</label>
+  <input id="password" type="password" autocomplete="current-password" />
+  <button id="entrar" onclick="entrar()">Entrar</button>
+  <p id="error"></p>
+
+  <script>
+    async function entrar() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const boton = document.getElementById('entrar');
+      const error = document.getElementById('error');
+      error.textContent = '';
+      boton.disabled = true;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const datos = await res.json();
+
+        if (!res.ok) {
+          error.textContent = datos.error || 'No se pudo iniciar sesión';
+          return;
+        }
+
+        localStorage.setItem('leadsift_token', datos.accessToken);
+
+        if (['owner', 'admin', 'soporte'].includes(datos.perfil.rol)) {
+          window.location.href = '/admin/';
+        } else {
+          window.location.href = '/portal/';
+        }
+      } catch (e) {
+        error.textContent = 'Error de conexión';
+      } finally {
+        boton.disabled = false;
+      }
+    }
+
+    document.getElementById('password').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') entrar();
+    });
+  </script>
+</body>
+</html>

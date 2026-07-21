@@ -60,3 +60,12 @@ export function requiereRol(...rolesPermitidos: Rol[]) {
 
 export const requiereInterno = requiereRol(...ROLES_INTERNOS);
 export const requiereClientUser = requiereRol("client_user");
+
+// Cualquier usuario autenticado con perfil válido, sin restricción de rol
+// (usado en /api/me para que el frontend sepa a dónde redirigir tras login).
+export async function requiereSesion(req: Request, res: Response, next: NextFunction) {
+  const perfil = await autenticar(req, res);
+  if (!perfil) return;
+  req.perfil = perfil;
+  next();
+}
