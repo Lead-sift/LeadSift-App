@@ -30,14 +30,24 @@ const esquemaEmpresa = z.object({
   sector: z.string().min(1),
   tono_comunicacion: z.string().default("cercano"),
   idioma_principal: z.string().default("es"),
-  canal_config: z.record(z.unknown()).optional(),
+  emailNotificacion: z.string().email().optional().or(z.literal("")),
 });
 
 empresasAdminRouter.post("/", async (req, res) => {
   const parseo = esquemaEmpresa.safeParse(req.body);
   if (!parseo.success) return res.status(400).json({ error: parseo.error.flatten() });
 
-  const { data, error } = await supabase.from("empresas").insert(parseo.data).select().single();
+  const { emailNotificacion, ...datosEmpresa } = parseo.data;
+
+  const { data, error } = await supabase
+    .from("empresas")
+    .insert({
+      ...datosEmpresa,
+      canal_config: emailNotificacion ? { email_notificacion: emailNotificacion } : {},
+    })
+    .select()
+    .single();
+
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
 });
@@ -46,9 +56,15 @@ empresasAdminRouter.put("/:id", async (req, res) => {
   const parseo = esquemaEmpresa.partial().safeParse(req.body);
   if (!parseo.success) return res.status(400).json({ error: parseo.error.flatten() });
 
+  const { emailNotificacion, ...datosEmpresa } = parseo.data;
+  const actualizacion: Record<string, unknown> = { ...datosEmpresa };
+  if (emailNotificacion !== undefined) {
+    actualizacion.canal_config = emailNotificacion ? { email_notificacion: emailNotificacion } : {};
+  }
+
   const { data, error } = await supabase
     .from("empresas")
-    .update(parseo.data)
+    .update(actualizacion)
     .eq("id", req.params.id)
     .select()
     .single();

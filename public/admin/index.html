@@ -48,6 +48,7 @@
   tr.fila-clic:hover { background: #faf5ee; }
 
   .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 1rem; max-width: 700px; }
+  .form-grid label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; color: var(--gris); }
   input, select, textarea { padding: 0.55rem; border: 1px solid var(--borde); border-radius: 6px; font-family: inherit; font-size: 0.9rem; width: 100%; }
   button.principal { padding: 0.55rem 1.1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; background: var(--arcilla); color: white; }
   button.secundario { padding: 0.45rem 0.9rem; border: 1px solid var(--borde); border-radius: 6px; cursor: pointer; font-size: 0.85rem; background: white; }
@@ -211,7 +212,7 @@
     contenido.innerHTML = `
       <h2>Listado de clientes</h2>
       <table id="tabla-empresas">
-        <thead><tr><th>Nombre</th><th>Sector</th><th>Activo</th></tr></thead>
+        <thead><tr><th>ID</th><th>Nombre</th><th>Sector</th><th>Activo</th></tr></thead>
         <tbody></tbody>
       </table>
       <div class="panel-prompt" id="panel-prompt" style="display:none;">
@@ -234,7 +235,7 @@
     for (const e of empresas) {
       const fila = document.createElement('tr');
       fila.className = 'fila-clic';
-      fila.innerHTML = `<td>${e.nombre}</td><td>${e.sector}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
+      fila.innerHTML = `<td style="font-family:monospace; font-size:0.75rem; color:var(--gris);">${e.id}</td><td>${e.nombre}</td><td>${e.sector}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
       fila.onclick = () => abrirPrompt(e);
       cuerpo.appendChild(fila);
     }
@@ -277,15 +278,39 @@
   }
 
   // --- Vista: Nuevo cliente ---
+  // Campos mostrados = columnas reales de empresas en Supabase (id, activo y
+  // created_at se generan solos; umbral_escalado no se pide porque aún no
+  // está implementado en ningún sitio del motor).
   function renderNuevoCliente() {
     const contenido = document.getElementById('contenido');
     contenido.innerHTML = `
       <h2>Nuevo cliente</h2>
       <div class="form-grid">
-        <input id="nueva-nombre" placeholder="Nombre" />
-        <input id="nueva-sector" placeholder="Sector" />
-        <input id="nueva-tono" placeholder="Tono (ej. cercano)" value="cercano" />
-        <input id="nueva-idioma" placeholder="Idioma (ej. es)" value="es" />
+        <div>
+          <label for="nueva-nombre">Nombre</label>
+          <input id="nueva-nombre" placeholder="Nombre" />
+        </div>
+        <div>
+          <label for="nueva-sector">Sector</label>
+          <input id="nueva-sector" placeholder="Sector" />
+        </div>
+        <div>
+          <label for="nueva-tono">Tono de comunicación</label>
+          <input id="nueva-tono" placeholder="Tono (ej. cercano)" value="cercano" />
+        </div>
+        <div>
+          <label for="nueva-idioma">Idioma principal</label>
+          <select id="nueva-idioma">
+            <option value="es">Español</option>
+            <option value="ca">Català</option>
+            <option value="es/ca">Español/Català</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <div>
+          <label for="nueva-email">Email de notificación de leads</label>
+          <input id="nueva-email" type="email" placeholder="contacto@empresacliente.com" />
+        </div>
       </div>
       <button class="principal" style="margin-top:1rem;" onclick="crearEmpresa()">Crear</button>
       <p id="mensaje-nuevo-cliente" style="margin-top:0.75rem; font-size:0.9rem;"></p>
@@ -296,14 +321,16 @@
     const nombre = document.getElementById('nueva-nombre').value.trim();
     const sector = document.getElementById('nueva-sector').value.trim();
     const tono_comunicacion = document.getElementById('nueva-tono').value.trim();
-    const idioma_principal = document.getElementById('nueva-idioma').value.trim();
+    const idioma_principal = document.getElementById('nueva-idioma').value;
+    const emailNotificacion = document.getElementById('nueva-email').value.trim();
     const mensaje = document.getElementById('mensaje-nuevo-cliente');
     if (!nombre || !sector) { mensaje.textContent = 'Nombre y sector son obligatorios'; return; }
 
-    await api('/api/admin/empresas', { method: 'POST', body: JSON.stringify({ nombre, sector, tono_comunicacion, idioma_principal }) });
-    mensaje.textContent = `Empresa "${nombre}" creada correctamente.`;
+    const creada = await api('/api/admin/empresas', { method: 'POST', body: JSON.stringify({ nombre, sector, tono_comunicacion, idioma_principal, emailNotificacion }) });
+    mensaje.innerHTML = `Empresa "${nombre}" creada correctamente. <strong>ID:</strong> <span style="font-family:monospace;">${creada.id}</span>`;
     document.getElementById('nueva-nombre').value = '';
     document.getElementById('nueva-sector').value = '';
+    document.getElementById('nueva-email').value = '';
   }
 
   // --- Vista: Dashboard ---
