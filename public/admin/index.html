@@ -2,233 +2,380 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<title>Panel — LeadSift Admin</title>
+<title>LeadSift — Panel</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='22' fill='%23B54A2C'/%3E%3Cpolygon points='24,20 72,20 67,30 29,30' fill='%23F0C5AE'/%3E%3Cpolygon points='30,31 66,31 61,41 35,41' fill='%23D98F72'/%3E%3Cpolygon points='36,42 60,42 55,52 41,52' fill='%237A2F19'/%3E%3Cpolygon points='41,52 55,52 48,64' fill='%23FBF6EE'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Work+Sans:wght@400;500;600&display=swap">
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 0 auto; padding: 2rem 1.5rem 4rem; color: #222; }
-  h1 { font-size: 1.5rem; }
-  h2 { font-size: 1.1rem; margin-top: 2rem; }
-  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-  tr.fila-empresa { cursor: pointer; }
-  tr.fila-empresa:hover { background: #f7f9fc; }
-  .form-nueva { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 1rem; }
-  input, select, textarea { padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
-  button { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; background: #1a4d8f; color: white; }
-  button.secundario { background: #eee; color: #222; }
-  .panel-prompt { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-top: 1rem; display: none; }
-  .version-lista div.version { border-bottom: 1px solid #eee; padding: 0.5rem 0; font-size: 0.85rem; }
+  :root {
+    --arcilla: #B54A2C; --arcilla-oscuro: #7A2F19; --ciruela: #4A2545;
+    --crema: #FBF6EE; --texto: #2B2620; --gris: #7A6B5C; --borde: #eaded0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Work Sans', system-ui, sans-serif; color: var(--texto); background: var(--crema); }
+  h1, h2, h3 { font-family: 'Poppins', sans-serif; }
+
+  .app-shell { display: flex; min-height: 100vh; }
+
+  .sidebar { width: 230px; background: white; border-right: 1px solid var(--borde); padding: 1.25rem 1rem; flex-shrink: 0; display: flex; flex-direction: column; }
+  .marca-lockup { display: flex; align-items: center; gap: 8px; margin-bottom: 2rem; padding: 0 0.25rem; }
+  .marca-lockup svg { width: 26px; height: 26px; }
+  .marca-lockup span { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.15rem; }
+  .marca-lockup span em { color: var(--arcilla); font-style: normal; }
+
+  .titulo-grupo { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gris); margin: 1.25rem 0 0.4rem 0.25rem; }
+  .enlace-nav { display: block; padding: 0.55rem 0.6rem; border-radius: 6px; color: var(--texto); text-decoration: none; font-size: 0.92rem; cursor: pointer; }
+  .enlace-nav:hover { background: #f4ede4; }
+  .enlace-nav.activo { background: var(--arcilla); color: white; }
+
+  .salir-btn { margin-top: auto; background: none; border: 1px solid var(--borde); border-radius: 6px; padding: 0.5rem; cursor: pointer; color: var(--gris); font-size: 0.85rem; }
+
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: white; border-bottom: 1px solid var(--borde); padding: 0.85rem 1.5rem; display: flex; gap: 0.6rem; align-items: center; }
+  .topbar input { flex: 1; max-width: 560px; padding: 0.55rem 0.8rem; border-radius: 20px; border: 1px solid var(--borde); font-size: 0.9rem; }
+  .topbar button { background: var(--ciruela); color: white; border: none; border-radius: 20px; padding: 0.55rem 1.1rem; cursor: pointer; font-size: 0.85rem; }
+  .topbar .icono-ia { font-size: 1.2rem; }
+
+  .respuesta-asistente { background: #fff; border-bottom: 1px solid var(--borde); padding: 0.75rem 1.5rem; font-size: 0.9rem; display: none; white-space: pre-wrap; }
+
+  .contenido { padding: 1.75rem; flex: 1; overflow-y: auto; }
+  .contenido h2 { font-size: 1.3rem; margin-top: 0; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: white; border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--borde); font-size: 0.87rem; }
+  th { background: #f4ede4; font-weight: 600; }
+  tr.fila-clic { cursor: pointer; }
+  tr.fila-clic:hover { background: #faf5ee; }
+
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-top: 1rem; max-width: 700px; }
+  input, select, textarea { padding: 0.55rem; border: 1px solid var(--borde); border-radius: 6px; font-family: inherit; font-size: 0.9rem; width: 100%; }
+  button.principal { padding: 0.55rem 1.1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; background: var(--arcilla); color: white; }
+  button.secundario { padding: 0.45rem 0.9rem; border: 1px solid var(--borde); border-radius: 6px; cursor: pointer; font-size: 0.85rem; background: white; }
+
+  .panel-prompt { background: white; border: 1px solid var(--borde); border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
+  .version-lista div.version { border-bottom: 1px solid var(--borde); padding: 0.6rem 0; font-size: 0.85rem; }
   .etiqueta-activo { background: #1a9f4d; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 10px; margin-left: 0.4rem; }
   .etiqueta-entorno { background: #999; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 10px; margin-left: 0.4rem; }
   .alerta { color: #c0392b; font-weight: bold; }
-  #salir { float: right; }
-  .chat-caja { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
-  .chat-historial { max-height: 300px; overflow-y: auto; margin-bottom: 0.75rem; }
-  .chat-msg { padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem; white-space: pre-wrap; }
-  .chat-msg.usuario { background: #e8f0fe; text-align: right; }
-  .chat-msg.asistente { background: white; border: 1px solid #eee; }
-  .chat-input-fila { display: flex; gap: 0.5rem; }
-  .chat-input-fila input { flex: 1; }
+
+  .filtros { display: flex; gap: 0.6rem; margin: 1rem 0; flex-wrap: wrap; }
+  .filtros select, .filtros input { width: auto; }
 </style>
 </head>
 <body>
-  <button id="salir" class="secundario" onclick="salir()">Salir</button>
-  <h1>Panel LeadSift — Clientes</h1>
 
-  <table id="tabla-empresas">
-    <thead><tr><th>Nombre</th><th>Sector</th><th>Activo</th></tr></thead>
-    <tbody></tbody>
-  </table>
-
-  <h2>KPIs</h2>
-  <table id="tabla-kpis">
-    <thead><tr><th>Empresa</th><th>Consultas</th><th>Canales</th><th>Tokens</th><th>Coste est.</th><th>Última actividad</th></tr></thead>
-    <tbody></tbody>
-  </table>
-
-  <h2>Asistente interno</h2>
-  <div class="chat-caja">
-    <div class="chat-historial" id="chat-historial"></div>
-    <div class="chat-input-fila">
-      <input id="chat-pregunta" placeholder="Ej: ¿qué cliente ha consumido más tokens?" />
-      <button onclick="preguntarAsistente()">Preguntar</button>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="marca-lockup">
+      <svg viewBox="0 0 96 96" aria-hidden="true">
+        <polygon points="18,18 78,18 71,30 25,30" fill="#D98F72"/>
+        <polygon points="25,31 71,31 64,43 32,43" fill="#B54A2C"/>
+        <polygon points="32,44 64,44 57,56 39,56" fill="#7A2F19"/>
+        <polygon points="39,56 57,56 48,73" fill="#4A2545"/>
+      </svg>
+      <span>Lead<em>Sift</em></span>
     </div>
-  </div>
 
-  <h2>Nueva empresa</h2>
-  <div class="form-nueva">
-    <input id="nueva-nombre" placeholder="Nombre" />
-    <input id="nueva-sector" placeholder="Sector" />
-    <input id="nueva-tono" placeholder="Tono (ej. cercano)" value="cercano" />
-    <input id="nueva-idioma" placeholder="Idioma (ej. es)" value="es" />
-    <button onclick="crearEmpresa()">Crear</button>
-  </div>
+    <nav>
+      <div class="titulo-grupo">Producción</div>
+      <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
+      <a class="enlace-nav" data-vista="clientes" onclick="irA('clientes')">Listado de clientes</a>
+      <a class="enlace-nav" data-vista="nuevo-cliente" onclick="irA('nuevo-cliente')">Nuevo cliente</a>
 
-  <div class="panel-prompt" id="panel-prompt">
-    <h2 id="prompt-titulo">Prompt de sistema</h2>
-    <div class="version-lista" id="version-lista"></div>
-    <h3>Nueva versión</h3>
-    <textarea id="prompt-contenido" rows="8" placeholder="Contenido del prompt..."></textarea>
-    <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
-      <select id="prompt-entorno">
-        <option value="sandbox">sandbox</option>
-        <option value="produccion">producción</option>
-      </select>
-      <button onclick="guardarVersion()">Guardar versión</button>
+      <div class="titulo-grupo">Estadísticas</div>
+      <a class="enlace-nav" data-vista="dashboard" onclick="irA('dashboard')">Dashboard</a>
+      <a class="enlace-nav" data-vista="extracciones" onclick="irA('extracciones')">Extracciones</a>
+    </nav>
+
+    <button class="salir-btn" onclick="salir()">Salir</button>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="icono-ia">✨</span>
+      <input id="chat-pregunta-top" placeholder="Pregúntale al asistente… ej: ¿qué cliente ha consumido más tokens?" />
+      <button onclick="preguntarAsistenteTop()">Preguntar</button>
     </div>
+    <div class="respuesta-asistente" id="respuesta-asistente"></div>
+
+    <div class="contenido" id="contenido"></div>
   </div>
+</div>
 
-  <script>
-    const token = localStorage.getItem('leadsift_token');
-    if (!token) window.location.href = '/login.html';
+<script>
+  const token = localStorage.getItem('leadsift_token');
+  if (!token) window.location.href = '/login.html';
 
-    let empresaSeleccionada = null;
+  let empresaSeleccionada = null;
 
-    async function api(ruta, opciones = {}) {
-      const res = await fetch(ruta, {
-        ...opciones,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-          ...(opciones.headers || {}),
-        },
-      });
-      if (res.status === 401) {
-        localStorage.removeItem('leadsift_token');
-        window.location.href = '/login.html';
-        return null;
-      }
-      return res.json();
-    }
-
-    function salir() {
+  async function api(ruta, opciones = {}) {
+    const res = await fetch(ruta, {
+      ...opciones,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(opciones.headers || {}),
+      },
+    });
+    if (res.status === 401) {
       localStorage.removeItem('leadsift_token');
       window.location.href = '/login.html';
+      return null;
     }
+    return res.json();
+  }
 
-    async function cargarEmpresas() {
-      const empresas = await api('/api/admin/empresas');
-      const cuerpo = document.querySelector('#tabla-empresas tbody');
-      cuerpo.innerHTML = '';
-      for (const e of empresas) {
-        const fila = document.createElement('tr');
-        fila.className = 'fila-empresa';
-        fila.innerHTML = `<td>${e.nombre}</td><td>${e.sector}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
-        fila.onclick = () => abrirPrompt(e);
-        cuerpo.appendChild(fila);
-      }
+  function salir() {
+    localStorage.removeItem('leadsift_token');
+    window.location.href = '/login.html';
+  }
+
+  // --- Asistente en la barra superior ---
+  async function preguntarAsistenteTop() {
+    const input = document.getElementById('chat-pregunta-top');
+    const pregunta = input.value.trim();
+    if (!pregunta) return;
+    const caja = document.getElementById('respuesta-asistente');
+    caja.style.display = 'block';
+    caja.textContent = 'Pensando...';
+    const datos = await api('/api/admin/asistente', { method: 'POST', body: JSON.stringify({ pregunta }) });
+    caja.textContent = datos.respuesta || datos.error || 'Sin respuesta';
+    input.value = '';
+  }
+  document.getElementById('chat-pregunta-top').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') preguntarAsistenteTop();
+  });
+
+  // --- Navegación entre vistas ---
+  const vistas = {
+    consultas: renderConsultasGenerales,
+    clientes: renderListadoClientes,
+    'nuevo-cliente': renderNuevoCliente,
+    dashboard: renderDashboard,
+    extracciones: renderExtracciones,
+  };
+
+  function irA(vista) {
+    document.querySelectorAll('.enlace-nav').forEach((a) => a.classList.toggle('activo', a.dataset.vista === vista));
+    window.location.hash = vista;
+    vistas[vista]();
+  }
+
+  // --- Vista: Consultas Generales ---
+  async function renderConsultasGenerales() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Consultas Generales</h2>
+      <div class="filtros">
+        <select id="filtro-canal"><option value="">Todos los canales</option><option value="email">Email</option><option value="formulario">Formulario</option><option value="whatsapp">WhatsApp</option></select>
+        <select id="filtro-intencion"><option value="">Toda intención</option><option value="spam">Spam</option><option value="informativa">Informativa</option><option value="lead_potencial">Lead potencial</option><option value="consulta_disponibilidad">Consulta disponibilidad</option></select>
+        <button class="secundario" onclick="cargarConsultasGenerales()">Filtrar</button>
+      </div>
+      <table id="tabla-consultas">
+        <thead><tr><th>Fecha</th><th>Empresa</th><th>Canal</th><th>Intención</th><th>Contacto</th><th>Necesidad</th><th>Score</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    `;
+    cargarConsultasGenerales();
+  }
+
+  async function cargarConsultasGenerales() {
+    const canal = document.getElementById('filtro-canal').value;
+    const intencion = document.getElementById('filtro-intencion').value;
+    const params = new URLSearchParams();
+    if (canal) params.set('canal', canal);
+    if (intencion) params.set('intencion', intencion);
+
+    const datos = await api(`/api/admin/consultas?${params.toString()}`);
+    const cuerpo = document.querySelector('#tabla-consultas tbody');
+    cuerpo.innerHTML = '';
+    for (const c of datos) {
+      const lead = Array.isArray(c.leads) ? c.leads[0] : c.leads;
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${new Date(c.created_at).toLocaleString('es-ES')}</td>
+        <td>${c.empresas?.nombre ?? '—'}</td>
+        <td>${c.canal}</td>
+        <td>${c.intencion ?? '—'}</td>
+        <td>${c.remitente_contacto}</td>
+        <td>${lead?.necesidad ?? '—'}</td>
+        <td>${lead?.score ?? '—'}</td>
+      `;
+      cuerpo.appendChild(fila);
     }
+  }
 
-    async function crearEmpresa() {
-      const nombre = document.getElementById('nueva-nombre').value.trim();
-      const sector = document.getElementById('nueva-sector').value.trim();
-      const tono_comunicacion = document.getElementById('nueva-tono').value.trim();
-      const idioma_principal = document.getElementById('nueva-idioma').value.trim();
-      if (!nombre || !sector) return alert('Nombre y sector son obligatorios');
-
-      await api('/api/admin/empresas', {
-        method: 'POST',
-        body: JSON.stringify({ nombre, sector, tono_comunicacion, idioma_principal }),
-      });
-      document.getElementById('nueva-nombre').value = '';
-      document.getElementById('nueva-sector').value = '';
-      cargarEmpresas();
+  // --- Vista: Listado de clientes ---
+  async function renderListadoClientes() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Listado de clientes</h2>
+      <table id="tabla-empresas">
+        <thead><tr><th>Nombre</th><th>Sector</th><th>Activo</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="panel-prompt" id="panel-prompt" style="display:none;">
+        <h3 id="prompt-titulo">Prompt de sistema</h3>
+        <div class="version-lista" id="version-lista"></div>
+        <h4>Nueva versión</h4>
+        <textarea id="prompt-contenido" rows="8" placeholder="Contenido del prompt..."></textarea>
+        <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
+          <select id="prompt-entorno" style="width:auto;">
+            <option value="sandbox">sandbox</option>
+            <option value="produccion">producción</option>
+          </select>
+          <button class="principal" onclick="guardarVersion()">Guardar versión</button>
+        </div>
+      </div>
+    `;
+    const empresas = await api('/api/admin/empresas');
+    const cuerpo = document.querySelector('#tabla-empresas tbody');
+    cuerpo.innerHTML = '';
+    for (const e of empresas) {
+      const fila = document.createElement('tr');
+      fila.className = 'fila-clic';
+      fila.innerHTML = `<td>${e.nombre}</td><td>${e.sector}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
+      fila.onclick = () => abrirPrompt(e);
+      cuerpo.appendChild(fila);
     }
+  }
 
-    async function abrirPrompt(empresa) {
-      empresaSeleccionada = empresa;
-      document.getElementById('panel-prompt').style.display = 'block';
-      document.getElementById('prompt-titulo').textContent = `Prompt de sistema — ${empresa.nombre}`;
-      const versiones = await api(`/api/admin/prompts/${empresa.id}`);
-      const lista = document.getElementById('version-lista');
-      lista.innerHTML = versiones.length
-        ? ''
-        : '<p>Sin versiones todavía.</p>';
-
-      for (const v of versiones) {
-        const div = document.createElement('div');
-        div.className = 'version';
-        div.innerHTML = `
-          v${v.version}
-          <span class="etiqueta-entorno">${v.entorno}</span>
-          ${v.activo ? '<span class="etiqueta-activo">activo en producción</span>' : ''}
-          <div style="white-space:pre-wrap; margin:0.3rem 0; max-height:100px; overflow:auto; font-size:0.8rem; color:#555;">${v.contenido}</div>
-          ${!v.activo ? `<button class="secundario" onclick="publicarVersion('${v.id}')">Publicar</button>` : ''}
-        `;
-        lista.appendChild(div);
-      }
-    }
-
-    async function guardarVersion() {
-      const contenido = document.getElementById('prompt-contenido').value.trim();
-      const entorno = document.getElementById('prompt-entorno').value;
-      if (!contenido || !empresaSeleccionada) return;
-
-      await api(`/api/admin/prompts/${empresaSeleccionada.id}`, {
-        method: 'POST',
-        body: JSON.stringify({ contenido, entorno }),
-      });
-      document.getElementById('prompt-contenido').value = '';
-      abrirPrompt(empresaSeleccionada);
-    }
-
-    async function publicarVersion(promptId) {
-      if (!empresaSeleccionada) return;
-      await api(`/api/admin/prompts/${empresaSeleccionada.id}/${promptId}/publicar`, { method: 'POST' });
-      abrirPrompt(empresaSeleccionada);
-    }
-
-    async function cargarKpis() {
-      const kpis = await api('/api/admin/kpis');
-      const cuerpo = document.querySelector('#tabla-kpis tbody');
-      cuerpo.innerHTML = '';
-      for (const k of kpis) {
-        const canales = Object.entries(k.porCanal).map(([c, n]) => `${c}: ${n}`).join(', ') || '—';
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-          <td>${k.nombre}</td>
-          <td>${k.totalConsultas}</td>
-          <td>${canales}</td>
-          <td>${k.tokensTotal}</td>
-          <td>${k.costoTotalEstimado.toFixed(4)}€</td>
-          <td class="${k.alertaInactividad ? 'alerta' : ''}">${k.ultimaActividad ? new Date(k.ultimaActividad).toLocaleDateString('es-ES') : '—'} ${k.alertaInactividad ? '⚠️ inactivo' : ''}</td>
-        `;
-        cuerpo.appendChild(fila);
-      }
-    }
-
-    function agregarMensajeChat(texto, quien) {
-      const historial = document.getElementById('chat-historial');
+  async function abrirPrompt(empresa) {
+    empresaSeleccionada = empresa;
+    document.getElementById('panel-prompt').style.display = 'block';
+    document.getElementById('prompt-titulo').textContent = `Prompt de sistema — ${empresa.nombre}`;
+    const versiones = await api(`/api/admin/prompts/${empresa.id}`);
+    const lista = document.getElementById('version-lista');
+    lista.innerHTML = versiones.length ? '' : '<p>Sin versiones todavía.</p>';
+    for (const v of versiones) {
       const div = document.createElement('div');
-      div.className = `chat-msg ${quien}`;
-      div.textContent = texto;
-      historial.appendChild(div);
-      historial.scrollTop = historial.scrollHeight;
+      div.className = 'version';
+      div.innerHTML = `
+        v${v.version}
+        <span class="etiqueta-entorno">${v.entorno}</span>
+        ${v.activo ? '<span class="etiqueta-activo">activo en producción</span>' : ''}
+        <div style="white-space:pre-wrap; margin:0.3rem 0; max-height:100px; overflow:auto; font-size:0.8rem; color:#555;">${v.contenido}</div>
+        ${!v.activo ? `<button class="secundario" onclick="publicarVersion('${v.id}')">Publicar</button>` : ''}
+      `;
+      lista.appendChild(div);
     }
+  }
 
-    async function preguntarAsistente() {
-      const input = document.getElementById('chat-pregunta');
-      const pregunta = input.value.trim();
-      if (!pregunta) return;
-      agregarMensajeChat(pregunta, 'usuario');
-      input.value = '';
-      agregarMensajeChat('Pensando...', 'asistente');
+  async function guardarVersion() {
+    const contenido = document.getElementById('prompt-contenido').value.trim();
+    const entorno = document.getElementById('prompt-entorno').value;
+    if (!contenido || !empresaSeleccionada) return;
+    await api(`/api/admin/prompts/${empresaSeleccionada.id}`, { method: 'POST', body: JSON.stringify({ contenido, entorno }) });
+    document.getElementById('prompt-contenido').value = '';
+    abrirPrompt(empresaSeleccionada);
+  }
 
-      const datos = await api('/api/admin/asistente', {
-        method: 'POST',
-        body: JSON.stringify({ pregunta }),
-      });
+  async function publicarVersion(promptId) {
+    if (!empresaSeleccionada) return;
+    await api(`/api/admin/prompts/${empresaSeleccionada.id}/${promptId}/publicar`, { method: 'POST' });
+    abrirPrompt(empresaSeleccionada);
+  }
 
-      const historial = document.getElementById('chat-historial');
-      historial.removeChild(historial.lastChild);
-      agregarMensajeChat(datos.respuesta || datos.error || 'Sin respuesta', 'asistente');
+  // --- Vista: Nuevo cliente ---
+  function renderNuevoCliente() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Nuevo cliente</h2>
+      <div class="form-grid">
+        <input id="nueva-nombre" placeholder="Nombre" />
+        <input id="nueva-sector" placeholder="Sector" />
+        <input id="nueva-tono" placeholder="Tono (ej. cercano)" value="cercano" />
+        <input id="nueva-idioma" placeholder="Idioma (ej. es)" value="es" />
+      </div>
+      <button class="principal" style="margin-top:1rem;" onclick="crearEmpresa()">Crear</button>
+      <p id="mensaje-nuevo-cliente" style="margin-top:0.75rem; font-size:0.9rem;"></p>
+    `;
+  }
+
+  async function crearEmpresa() {
+    const nombre = document.getElementById('nueva-nombre').value.trim();
+    const sector = document.getElementById('nueva-sector').value.trim();
+    const tono_comunicacion = document.getElementById('nueva-tono').value.trim();
+    const idioma_principal = document.getElementById('nueva-idioma').value.trim();
+    const mensaje = document.getElementById('mensaje-nuevo-cliente');
+    if (!nombre || !sector) { mensaje.textContent = 'Nombre y sector son obligatorios'; return; }
+
+    await api('/api/admin/empresas', { method: 'POST', body: JSON.stringify({ nombre, sector, tono_comunicacion, idioma_principal }) });
+    mensaje.textContent = `Empresa "${nombre}" creada correctamente.`;
+    document.getElementById('nueva-nombre').value = '';
+    document.getElementById('nueva-sector').value = '';
+  }
+
+  // --- Vista: Dashboard ---
+  async function renderDashboard() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Dashboard</h2>
+      <table id="tabla-kpis">
+        <thead><tr><th>Empresa</th><th>Consultas</th><th>Canales</th><th>Tokens</th><th>Coste est.</th><th>Última actividad</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    `;
+    const kpis = await api('/api/admin/kpis');
+    const cuerpo = document.querySelector('#tabla-kpis tbody');
+    cuerpo.innerHTML = '';
+    for (const k of kpis) {
+      const canales = Object.entries(k.porCanal).map(([c, n]) => `${c}: ${n}`).join(', ') || '—';
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${k.nombre}</td>
+        <td>${k.totalConsultas}</td>
+        <td>${canales}</td>
+        <td>${k.tokensTotal}</td>
+        <td>${k.costoTotalEstimado.toFixed(4)}€</td>
+        <td class="${k.alertaInactividad ? 'alerta' : ''}">${k.ultimaActividad ? new Date(k.ultimaActividad).toLocaleDateString('es-ES') : '—'} ${k.alertaInactividad ? '⚠️ inactivo' : ''}</td>
+      `;
+      cuerpo.appendChild(fila);
     }
+  }
 
-    document.getElementById('chat-pregunta').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') preguntarAsistente();
+  // --- Vista: Extracciones ---
+  async function renderExtracciones() {
+    const empresas = await api('/api/admin/empresas');
+    const opciones = empresas.map((e) => `<option value="${e.id}">${e.nombre}</option>`).join('');
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Extracciones</h2>
+      <p style="color:var(--gris); font-size:0.9rem;">Descarga los leads en CSV, con filtros opcionales.</p>
+      <div class="filtros">
+        <select id="extraccion-empresa"><option value="">Todas las empresas</option>${opciones}</select>
+        <input id="extraccion-desde" type="date" />
+        <input id="extraccion-hasta" type="date" />
+        <button class="principal" onclick="descargarExtraccion()">Descargar CSV</button>
+      </div>
+    `;
+  }
+
+  async function descargarExtraccion() {
+    const empresaId = document.getElementById('extraccion-empresa').value;
+    const desde = document.getElementById('extraccion-desde').value;
+    const hasta = document.getElementById('extraccion-hasta').value;
+    const params = new URLSearchParams({ formato: 'csv' });
+    if (empresaId) params.set('empresaId', empresaId);
+    if (desde) params.set('desde', desde);
+    if (hasta) params.set('hasta', hasta);
+
+    // Descarga autenticada: un <a href> normal no puede llevar la cabecera
+    // Authorization, así que pedimos el CSV vía fetch y lo convertimos en
+    // un archivo local para descargarlo.
+    const res = await fetch(`/api/admin/extracciones/leads?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
+    const blob = await res.blob();
+    const enlace = document.createElement('a');
+    enlace.href = URL.createObjectURL(blob);
+    enlace.download = 'leads-leadsift.csv';
+    enlace.click();
+  }
 
-    cargarEmpresas();
-    cargarKpis();
-  </script>
+  // --- Arranque ---
+  const vistaInicial = window.location.hash.replace('#', '') || 'dashboard';
+  irA(vistas[vistaInicial] ? vistaInicial : 'dashboard');
+</script>
 </body>
 </html>
