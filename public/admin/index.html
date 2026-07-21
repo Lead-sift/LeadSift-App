@@ -19,7 +19,15 @@
   .version-lista div.version { border-bottom: 1px solid #eee; padding: 0.5rem 0; font-size: 0.85rem; }
   .etiqueta-activo { background: #1a9f4d; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 10px; margin-left: 0.4rem; }
   .etiqueta-entorno { background: #999; color: white; font-size: 0.7rem; padding: 0.1rem 0.5rem; border-radius: 10px; margin-left: 0.4rem; }
+  .alerta { color: #c0392b; font-weight: bold; }
   #salir { float: right; }
+  .chat-caja { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+  .chat-historial { max-height: 300px; overflow-y: auto; margin-bottom: 0.75rem; }
+  .chat-msg { padding: 0.5rem 0.75rem; border-radius: 6px; margin-bottom: 0.5rem; font-size: 0.9rem; white-space: pre-wrap; }
+  .chat-msg.usuario { background: #e8f0fe; text-align: right; }
+  .chat-msg.asistente { background: white; border: 1px solid #eee; }
+  .chat-input-fila { display: flex; gap: 0.5rem; }
+  .chat-input-fila input { flex: 1; }
 </style>
 </head>
 <body>
@@ -30,6 +38,21 @@
     <thead><tr><th>Nombre</th><th>Sector</th><th>Activo</th></tr></thead>
     <tbody></tbody>
   </table>
+
+  <h2>KPIs</h2>
+  <table id="tabla-kpis">
+    <thead><tr><th>Empresa</th><th>Consultas</th><th>Canales</th><th>Tokens</th><th>Coste est.</th><th>Última actividad</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <h2>Asistente interno</h2>
+  <div class="chat-caja">
+    <div class="chat-historial" id="chat-historial"></div>
+    <div class="chat-input-fila">
+      <input id="chat-pregunta" placeholder="Ej: ¿qué cliente ha consumido más tokens?" />
+      <button onclick="preguntarAsistente()">Preguntar</button>
+    </div>
+  </div>
 
   <h2>Nueva empresa</h2>
   <div class="form-nueva">
@@ -154,7 +177,58 @@
       abrirPrompt(empresaSeleccionada);
     }
 
+    async function cargarKpis() {
+      const kpis = await api('/api/admin/kpis');
+      const cuerpo = document.querySelector('#tabla-kpis tbody');
+      cuerpo.innerHTML = '';
+      for (const k of kpis) {
+        const canales = Object.entries(k.porCanal).map(([c, n]) => `${c}: ${n}`).join(', ') || '—';
+        const fila = document.createElement('tr');
+        fila.innerHTML = `
+          <td>${k.nombre}</td>
+          <td>${k.totalConsultas}</td>
+          <td>${canales}</td>
+          <td>${k.tokensTotal}</td>
+          <td>${k.costoTotalEstimado.toFixed(4)}€</td>
+          <td class="${k.alertaInactividad ? 'alerta' : ''}">${k.ultimaActividad ? new Date(k.ultimaActividad).toLocaleDateString('es-ES') : '—'} ${k.alertaInactividad ? '⚠️ inactivo' : ''}</td>
+        `;
+        cuerpo.appendChild(fila);
+      }
+    }
+
+    function agregarMensajeChat(texto, quien) {
+      const historial = document.getElementById('chat-historial');
+      const div = document.createElement('div');
+      div.className = `chat-msg ${quien}`;
+      div.textContent = texto;
+      historial.appendChild(div);
+      historial.scrollTop = historial.scrollHeight;
+    }
+
+    async function preguntarAsistente() {
+      const input = document.getElementById('chat-pregunta');
+      const pregunta = input.value.trim();
+      if (!pregunta) return;
+      agregarMensajeChat(pregunta, 'usuario');
+      input.value = '';
+      agregarMensajeChat('Pensando...', 'asistente');
+
+      const datos = await api('/api/admin/asistente', {
+        method: 'POST',
+        body: JSON.stringify({ pregunta }),
+      });
+
+      const historial = document.getElementById('chat-historial');
+      historial.removeChild(historial.lastChild);
+      agregarMensajeChat(datos.respuesta || datos.error || 'Sin respuesta', 'asistente');
+    }
+
+    document.getElementById('chat-pregunta').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') preguntarAsistente();
+    });
+
     cargarEmpresas();
+    cargarKpis();
   </script>
 </body>
 </html>
