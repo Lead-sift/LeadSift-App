@@ -82,6 +82,7 @@
       <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
       <a class="enlace-nav" data-vista="clientes" onclick="irA('clientes')">Listado de clientes</a>
       <a class="enlace-nav" data-vista="nuevo-cliente" onclick="irA('nuevo-cliente')">Nuevo cliente</a>
+      <a class="enlace-nav" data-vista="servicios" onclick="irA('servicios')">Servicios</a>
 
       <div class="titulo-grupo">Estadísticas</div>
       <a class="enlace-nav" data-vista="dashboard" onclick="irA('dashboard')">Dashboard</a>
@@ -152,6 +153,7 @@
     consultas: renderConsultasGenerales,
     clientes: renderListadoClientes,
     'nuevo-cliente': renderNuevoCliente,
+    servicios: renderServicios,
     dashboard: renderDashboard,
     extracciones: renderExtracciones,
   };
@@ -235,7 +237,7 @@
     for (const e of empresas) {
       const fila = document.createElement('tr');
       fila.className = 'fila-clic';
-      fila.innerHTML = `<td style="font-family:monospace; font-size:0.75rem; color:var(--gris);">${e.id}</td><td>${e.nombre}</td><td>${e.nif_cif_nie ?? '—'}</td><td>${e.sector}</td><td>${e.nombre_contacto ?? '—'}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
+      fila.innerHTML = `<td style="font-family:monospace; font-size:0.8rem; color:var(--gris);" title="uuid interno: ${e.id}">${e.codigo_cliente ?? '—'}</td><td>${e.nombre}</td><td>${e.nif_cif_nie ?? '—'}</td><td>${e.sector}</td><td>${e.nombre_contacto ?? '—'}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
       fila.onclick = () => abrirPrompt(e);
       cuerpo.appendChild(fila);
     }
@@ -452,7 +454,112 @@
     }
     renderNuevoCliente();
     document.getElementById('mensaje-nuevo-cliente').innerHTML =
-      `✅ Empresa "${nombre}" creada correctamente. <strong>ID:</strong> <span style="font-family:monospace;">${creada.id}</span>`;
+      `✅ Empresa "${nombre}" creada correctamente. <strong>Código de cliente:</strong> <span style="font-family:monospace;">${creada.codigo_cliente ?? creada.id}</span>`;
+  }
+
+  // --- Vista: Servicios ---
+  function renderServicios() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Servicios</h2>
+      <div class="filtros">
+        <input id="buscar-cliente" placeholder="Buscar por nombre, NIF/CIF o código de cliente..." style="max-width:400px;" />
+        <button class="secundario" onclick="buscarClientesServicios()">Buscar</button>
+      </div>
+      <div id="resultados-busqueda-servicios"></div>
+      <div id="cliente-fijado-servicios"></div>
+    `;
+    document.getElementById('buscar-cliente').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') buscarClientesServicios();
+    });
+  }
+
+  async function buscarClientesServicios() {
+    const q = document.getElementById('buscar-cliente').value.trim();
+    const contenedor = document.getElementById('resultados-busqueda-servicios');
+    contenedor.innerHTML = '';
+    if (!q) return;
+
+    const datos = await api(`/api/admin/empresas?q=${encodeURIComponent(q)}`);
+    const tabla = document.createElement('table');
+    tabla.innerHTML = `<thead><tr><th>Código</th><th>Nombre / Razón Social</th><th>NIF/CIF/NIE</th><th>Sector</th></tr></thead><tbody></tbody>`;
+    const cuerpo = tabla.querySelector('tbody');
+    for (const e of datos) {
+      const fila = document.createElement('tr');
+      fila.className = 'fila-clic';
+      fila.innerHTML = `<td>${e.codigo_cliente ?? '—'}</td><td>${e.nombre}</td><td>${e.nif_cif_nie ?? '—'}</td><td>${e.sector}</td>`;
+      fila.onclick = () => fijarClienteServicios(e);
+      cuerpo.appendChild(fila);
+    }
+    contenedor.appendChild(tabla);
+  }
+
+  async function fijarClienteServicios(empresa) {
+    document.getElementById('resultados-busqueda-servicios').innerHTML = '';
+    document.getElementById('buscar-cliente').value = '';
+
+    const canales = await api(`/api/admin/canales/${empresa.id}`);
+    const canalFormulario = canales.find((c) => c.canal === 'formulario') || {};
+    const canalWhatsapp = canales.find((c) => c.canal === 'whatsapp') || {};
+
+    const contenedor = document.getElementById('cliente-fijado-servicios');
+    contenedor.innerHTML = `
+      <div class="panel-prompt" style="margin-top:1.5rem;">
+        <h3>${empresa.nombre} <span style="font-size:0.8rem; color:var(--gris); font-family:monospace;">(${empresa.codigo_cliente ?? empresa.id})</span></h3>
+
+        <table>
+          <thead><tr><th style="width:40px;"></th><th>Canal</th><th>Datos de conexión</th><th></th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="vertical-align:top;"><input type="checkbox" id="chk-formulario" ${canalFormulario.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
+              <td style="vertical-align:top;">Formulario</td>
+              <td>
+                <label style="font-size:0.8rem;">URL del formulario web del cliente (referencia)</label>
+                <input id="form-url-formulario" placeholder="https://clienteweb.com/contacto" value="${canalFormulario.detalles?.url_formulario ?? ''}" />
+                <p style="font-size:0.78rem; color:var(--gris); margin:0.5rem 0 0;">
+                  Indica a su desarrollador que cada envío del formulario se mande a:<br>
+                  <code>POST ${window.location.origin}/api/ingesta</code><br>
+                  con el cuerpo: <code>{ "empresaId": "${empresa.id}", "canal": "formulario", "remitenteContacto": "...", "texto": "..." }</code>
+                </p>
+              </td>
+              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'formulario')">Guardar</button></td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;"><input type="checkbox" id="chk-whatsapp" ${canalWhatsapp.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
+              <td style="vertical-align:top;">WhatsApp</td>
+              <td>
+                <label style="font-size:0.8rem;">Phone Number ID</label>
+                <input id="form-phone-id" placeholder="1233368339858331" value="${canalWhatsapp.detalles?.phone_number_id ?? ''}" />
+                <label style="font-size:0.8rem; margin-top:0.4rem;">WhatsApp Business Account ID (WABA)</label>
+                <input id="form-waba-id" placeholder="1720165655798140" value="${canalWhatsapp.detalles?.waba_id ?? ''}" />
+                <label style="font-size:0.8rem; margin-top:0.4rem;">Access Token</label>
+                <input id="form-access-token" type="password" placeholder="EAAxxxxxxx..." value="${canalWhatsapp.detalles?.access_token ?? ''}" />
+              </td>
+              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'whatsapp')">Guardar</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <p id="mensaje-servicios" style="margin-top:0.75rem; font-size:0.9rem;"></p>
+      </div>
+    `;
+  }
+
+  async function guardarCanalServicio(empresaId, canal) {
+    const mensaje = document.getElementById('mensaje-servicios');
+    let activo, detalles;
+    if (canal === 'formulario') {
+      activo = document.getElementById('chk-formulario').checked;
+      detalles = { url_formulario: document.getElementById('form-url-formulario').value.trim() };
+    } else {
+      activo = document.getElementById('chk-whatsapp').checked;
+      detalles = {
+        phone_number_id: document.getElementById('form-phone-id').value.trim(),
+        waba_id: document.getElementById('form-waba-id').value.trim(),
+        access_token: document.getElementById('form-access-token').value.trim(),
+      };
+    }
+    await api(`/api/admin/canales/${empresaId}`, { method: 'PUT', body: JSON.stringify({ canal, activo, detalles }) });
+    mensaje.textContent = `Canal "${canal}" guardado correctamente.`;
   }
 
   // --- Vista: Dashboard ---

@@ -4,12 +4,18 @@ import { supabase } from "../../services/supabaseClient.js";
 
 export const empresasAdminRouter = Router();
 
-empresasAdminRouter.get("/", async (_req, res) => {
-  const { data, error } = await supabase
-    .from("empresas")
-    .select("*")
-    .order("created_at", { ascending: false });
+empresasAdminRouter.get("/", async (req, res) => {
+  const { q } = req.query;
+  let consulta = supabase.from("empresas").select("*").order("created_at", { ascending: false });
 
+  if (q) {
+    const texto = `%${q}%`;
+    consulta = consulta.or(
+      `nombre.ilike.${texto},nif_cif_nie.ilike.${texto},codigo_cliente.ilike.${texto}`
+    );
+  }
+
+  const { data, error } = await consulta;
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
