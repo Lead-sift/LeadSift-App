@@ -5,27 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LeadSift — Filtra y cualifica tus leads comerciales | Barcelona</title>
 <meta name="description" content="Recibimos las consultas de tus clientes, separamos el interés real del ruido y te entregamos solo los leads cualificados. Sin contratar personal comercial extra.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='22' fill='%23B54A2C'/%3E%3Cpolygon points='24,20 72,20 67,30 29,30' fill='%23F0C5AE'/%3E%3Cpolygon points='30,31 66,31 61,41 35,41' fill='%23D98F72'/%3E%3Cpolygon points='36,42 60,42 55,52 41,52' fill='%237A2F19'/%3E%3Cpolygon points='41,52 55,52 48,64' fill='%23FBF6EE'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Work+Sans:wght@400;500;600&display=swap">
 <style>
   :root {
-    --azul: #1a4d8f;
-    --azul-oscuro: #123a6b;
-    --verde: #1a9f4d;
-    --gris: #666;
-    --fondo: #fafafa;
+    --arcilla: #B54A2C;
+    --arcilla-oscuro: #7A2F19;
+    --ciruela: #4A2545;
+    --crema: #FBF6EE;
+    --texto: #2B2620;
+    --gris: #7A6B5C;
   }
   * { box-sizing: border-box; }
   body {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family: 'Work Sans', system-ui, -apple-system, sans-serif;
     margin: 0;
-    color: #222;
-    background: var(--fondo);
+    color: var(--texto);
+    background: var(--crema);
     line-height: 1.55;
   }
-  a { color: var(--azul); }
+  h1, h2, h3, .numero, .marca-lockup span, .etiqueta { font-family: 'Poppins', system-ui, sans-serif; }
+  a { color: var(--arcilla-oscuro); }
+
+  .marca-barra { padding: 1.25rem 1.5rem 0; }
+  .marca-lockup { display: flex; align-items: center; gap: 10px; }
+  .marca-lockup svg { width: 30px; height: 30px; flex-shrink: 0; }
+  .marca-lockup span { font-weight: 700; font-size: 1.3rem; color: var(--texto); }
+  .marca-lockup span em { color: var(--arcilla); font-style: normal; }
+
   header.hero {
-    background: linear-gradient(135deg, var(--azul), var(--azul-oscuro));
+    background: linear-gradient(135deg, var(--arcilla), var(--arcilla-oscuro));
     color: white;
-    padding: 4.5rem 1.5rem 5rem;
+    padding: 3rem 1.5rem 5rem;
     text-align: center;
   }
   header.hero h1 { font-size: 2.3rem; margin-bottom: 0.9rem; }
@@ -41,7 +53,7 @@
     cursor: pointer;
     border: none;
   }
-  .btn-primario { background: var(--verde); color: white; }
+  .btn-primario { background: var(--ciruela); color: white; }
   .btn-secundario { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.5); }
 
   .contenedor { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
@@ -55,25 +67,25 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
   }
-  .paso { background: var(--fondo); border-radius: 10px; padding: 1.5rem; border: 1px solid #e5e5e5; }
+  .paso { background: var(--crema); border-radius: 10px; padding: 1.5rem; border: 1px solid #eaded0; }
   .paso .numero {
     display: inline-block; width: 28px; height: 28px;
-    background: var(--azul); color: white; border-radius: 50%;
+    background: var(--arcilla); color: white; border-radius: 50%;
     text-align: center; line-height: 28px; font-weight: bold; margin-bottom: 0.75rem;
   }
 
   .beneficios { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
   .beneficio { padding: 1.25rem; }
-  .beneficio h3 { font-size: 1.05rem; margin-bottom: 0.4rem; color: var(--azul-oscuro); }
+  .beneficio h3 { font-size: 1.05rem; margin-bottom: 0.4rem; color: var(--arcilla-oscuro); }
   .beneficio p { font-size: 0.95rem; color: #444; margin: 0; }
 
   .credibilidad {
-    background: #eef3fb;
+    background: #F3E4DC;
     border-radius: 10px;
     padding: 1.5rem 1.75rem;
     text-align: center;
     font-size: 1.02rem;
-    color: var(--azul-oscuro);
+    color: var(--arcilla-oscuro);
   }
 
   .demo-caja {
@@ -81,7 +93,7 @@
     border-radius: 12px;
     padding: 2rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-    border: 1px solid #e5e5e5;
+    border: 1px solid #eaded0;
   }
   .demo-caja p.aviso { font-size: 0.85rem; color: var(--gris); margin-top: -0.5rem; margin-bottom: 1.25rem; }
   label[for="demo-input"] { display: block; font-weight: 600; margin-bottom: 0.4rem; }
@@ -90,35 +102,39 @@
     border-radius: 8px; border: 1px solid #ccc; font-family: inherit; font-size: 1rem;
   }
   button#demo-enviar {
-    margin-top: 0.75rem; background: var(--verde); color: white; border: none;
+    margin-top: 0.75rem; background: var(--ciruela); color: white; border: none;
     padding: 0.7rem 1.4rem; border-radius: 8px; font-size: 1rem; cursor: pointer;
   }
   button#demo-enviar:disabled { opacity: 0.6; cursor: not-allowed; }
   .ejemplos { margin-top: 0.75rem; font-size: 0.85rem; }
   .ejemplos button {
-    background: #eef3fb; border: 1px solid #cddcf0; color: var(--azul-oscuro);
+    background: #F3E4DC; border: 1px solid #e6cdbd; color: var(--arcilla-oscuro);
     border-radius: 6px; padding: 0.3rem 0.6rem; margin: 0.2rem 0.3rem 0.2rem 0;
     cursor: pointer; font-size: 0.8rem;
   }
   #demo-resultado { margin-top: 1.5rem; }
-  .resultado-tarjeta { background: #f4f8ff; border-left: 4px solid var(--azul); border-radius: 6px; padding: 1rem 1.25rem; }
+  .resultado-tarjeta { background: #FBF2EA; border-left: 4px solid var(--arcilla); border-radius: 6px; padding: 1rem 1.25rem; }
   .resultado-tarjeta.spam { border-left-color: #999; background: #f5f5f5; }
   .etiqueta {
     display: inline-block; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;
-    background: var(--azul); color: white; padding: 0.15rem 0.6rem; border-radius: 20px; margin-bottom: 0.6rem;
+    background: var(--arcilla); color: white; padding: 0.15rem 0.6rem; border-radius: 20px; margin-bottom: 0.6rem;
   }
   .ficha-lead div { margin-bottom: 0.35rem; font-size: 0.95rem; }
   .legal-aviso { font-size: 0.8rem; color: var(--gris); margin-top: 0.75rem; }
   .legal-aviso a { color: var(--gris); text-decoration: underline; }
 
   footer.pie {
-    background: var(--azul-oscuro);
+    background: var(--texto);
     color: rgba(255,255,255,0.85);
     text-align: center;
     padding: 2rem 1.5rem;
     font-size: 0.85rem;
   }
   footer.pie a { color: white; margin: 0 0.6rem; }
+  .pie-lockup { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 0.5rem; }
+  .pie-lockup svg { width: 22px; height: 22px; }
+  .pie-lockup span { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--crema); }
+  .pie-lockup span em { color: #D98F72; font-style: normal; }
 
   .whatsapp-flotante {
     position: fixed;
@@ -149,15 +165,27 @@
     z-index: 1000;
     font-size: 0.9rem;
   }
-  #banner-cookies a { color: #9fc4ff; }
+  #banner-cookies a { color: #e6b49a; }
   #banner-cookies button {
-    background: var(--verde); color: white; border: none; padding: 0.5rem 1.1rem;
+    background: var(--ciruela); color: white; border: none; padding: 0.5rem 1.1rem;
     border-radius: 6px; cursor: pointer; font-weight: 600;
   }
   #banner-cookies button.rechazar { background: transparent; border: 1px solid #999; color: #ccc; }
 </style>
 </head>
 <body>
+
+<div class="marca-barra">
+  <div class="contenedor marca-lockup">
+    <svg viewBox="0 0 96 96" aria-hidden="true">
+      <polygon points="18,18 78,18 71,30 25,30" fill="#D98F72"/>
+      <polygon points="25,31 71,31 64,43 32,43" fill="#B54A2C"/>
+      <polygon points="32,44 64,44 57,56 39,56" fill="#7A2F19"/>
+      <polygon points="39,56 57,56 48,73" fill="#4A2545"/>
+    </svg>
+    <span>Lead<em>Sift</em></span>
+  </div>
+</div>
 
 <header class="hero">
   <div class="contenedor">
@@ -234,7 +262,16 @@
 </section>
 
 <footer class="pie">
-  <div>LeadSift — filtramos tus consultas comerciales para que solo llegue lo que importa.</div>
+  <div class="pie-lockup">
+    <svg viewBox="0 0 96 96" aria-hidden="true">
+      <polygon points="18,18 78,18 71,30 25,30" fill="#F0C5AE"/>
+      <polygon points="25,31 71,31 64,43 32,43" fill="#D98F72"/>
+      <polygon points="32,44 64,44 57,56 39,56" fill="#B54A2C"/>
+      <polygon points="39,56 57,56 48,73" fill="#FBF6EE"/>
+    </svg>
+    <span>Lead<em>Sift</em></span>
+  </div>
+  <div>filtramos tus consultas comerciales para que solo llegue lo que importa.</div>
   <div style="margin-top:0.75rem;">
     <a href="mailto:hola@leadsift.es">hola@leadsift.es</a>
     <a href="/aviso-legal.html">Aviso legal</a>

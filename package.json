@@ -11,7 +11,10 @@
     "test:espailalira": "tsx src/scripts/testEspaiLaLira.ts",
     "seed:empresa-ejemplo": "tsx src/scripts/seedEmpresaEjemplo.ts",
     "seed:espailalira": "tsx src/scripts/seedEspaiLaLira.ts",
-    "limpiar:datos-prueba": "tsx src/scripts/limpiarDatosPrueba.ts"
+    "limpiar:datos-prueba": "tsx src/scripts/limpiarDatosPrueba.ts",
+    "crear:usuario-interno": "tsx src/scripts/crearUsuarioInterno.ts",
+    "crear:usuario-cliente": "tsx src/scripts/crearUsuarioCliente.ts",
+    "verificar:aislamiento": "tsx src/scripts/verificarAislamiento.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
