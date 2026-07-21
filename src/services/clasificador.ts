@@ -11,7 +11,18 @@ Clasifica el siguiente mensaje de un cliente en una de estas categorías exactas
 Responde ÚNICAMENTE con una de estas palabras: spam, informativa, consulta_disponibilidad o lead_potencial.
 `.trim();
 
-export async function clasificarIntencion(mensajeCliente: string): Promise<Intencion> {
+export interface UsoTokens {
+  modelo: string;
+  tokensEntrada: number;
+  tokensSalida: number;
+}
+
+export interface ResultadoClasificacion {
+  intencion: Intencion;
+  uso: UsoTokens;
+}
+
+export async function clasificarIntencion(mensajeCliente: string): Promise<ResultadoClasificacion> {
   const respuesta = await anthropic.messages.create({
     model: MODELOS.clasificador,
     max_tokens: 10,
@@ -26,8 +37,17 @@ export async function clasificarIntencion(mensajeCliente: string): Promise<Inten
     .trim()
     .toLowerCase();
 
-  if (texto.includes("spam")) return "spam";
-  if (texto.includes("consulta_disponibilidad")) return "consulta_disponibilidad";
-  if (texto.includes("lead_potencial")) return "lead_potencial";
-  return "informativa";
+  let intencion: Intencion = "informativa";
+  if (texto.includes("spam")) intencion = "spam";
+  else if (texto.includes("consulta_disponibilidad")) intencion = "consulta_disponibilidad";
+  else if (texto.includes("lead_potencial")) intencion = "lead_potencial";
+
+  return {
+    intencion,
+    uso: {
+      modelo: MODELOS.clasificador,
+      tokensEntrada: respuesta.usage.input_tokens,
+      tokensSalida: respuesta.usage.output_tokens,
+    },
+  };
 }

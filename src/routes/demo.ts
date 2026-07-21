@@ -36,18 +36,18 @@ demoRouter.post("/", limitadorDemo, async (req, res) => {
 
   try {
     const { texto } = parseo.data;
-    const intencion = await clasificarIntencion(texto);
+    const { intencion } = await clasificarIntencion(texto);
 
     if (intencion === "spam") {
       return res.json({ intencion, mensaje: "Descartado como spam antes de gastar en el modelo de cualificación." });
     }
 
     if (intencion === "informativa") {
-      const respuesta = await generarRespuestaInformativa(promptDemo, texto);
+      const { respuesta } = await generarRespuestaInformativa(promptDemo, texto);
       return res.json({ intencion, respuesta });
     }
 
-    const ficha = await cualificarLead(promptDemo, texto);
+    const { ficha } = await cualificarLead(promptDemo, texto);
     res.json({ intencion, ficha });
   } catch (error) {
     console.error(error);

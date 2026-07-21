@@ -1,4 +1,10 @@
 import { anthropic, MODELOS } from "./anthropicClient.js";
+import type { UsoTokens } from "./clasificador.js";
+
+export interface ResultadoInformativa {
+  respuesta: string;
+  uso: UsoTokens;
+}
 
 // Respuesta de bajo riesgo (consulta informativa estándar: horarios, qué
 // incluye el servicio, ubicación...). Se envía automáticamente sin pasar por
@@ -8,8 +14,8 @@ import { anthropic, MODELOS } from "./anthropicClient.js";
 export async function generarRespuestaInformativa(
   promptSistema: string,
   mensajeCliente: string
-): Promise<string> {
-  const respuesta = await anthropic.messages.create({
+): Promise<ResultadoInformativa> {
+  const respuestaAnthropic = await anthropic.messages.create({
     model: MODELOS.cualificador,
     max_tokens: 512,
     system:
@@ -18,9 +24,18 @@ export async function generarRespuestaInformativa(
     messages: [{ role: "user", content: mensajeCliente }],
   });
 
-  return respuesta.content
+  const respuesta = respuestaAnthropic.content
     .filter((bloque) => bloque.type === "text")
     .map((bloque) => (bloque.type === "text" ? bloque.text : ""))
     .join("")
     .trim();
+
+  return {
+    respuesta,
+    uso: {
+      modelo: MODELOS.cualificador,
+      tokensEntrada: respuestaAnthropic.usage.input_tokens,
+      tokensSalida: respuestaAnthropic.usage.output_tokens,
+    },
+  };
 }

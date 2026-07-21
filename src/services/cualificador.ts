@@ -1,5 +1,6 @@
 import { anthropic, MODELOS } from "./anthropicClient.js";
 import type { FichaLead } from "../types/lead.js";
+import type { UsoTokens } from "./clasificador.js";
 import type Anthropic from "@anthropic-ai/sdk";
 
 const HERRAMIENTA_FICHA_LEAD: Anthropic.Tool = {
@@ -22,10 +23,15 @@ const HERRAMIENTA_FICHA_LEAD: Anthropic.Tool = {
   },
 };
 
+export interface ResultadoCualificacion {
+  ficha: FichaLead;
+  uso: UsoTokens;
+}
+
 export async function cualificarLead(
   promptSistema: string,
   mensajeCliente: string
-): Promise<FichaLead> {
+): Promise<ResultadoCualificacion> {
   const respuesta = await anthropic.messages.create({
     model: MODELOS.cualificador,
     max_tokens: 1024,
@@ -43,5 +49,12 @@ export async function cualificarLead(
     throw new Error("El modelo no devolvió una ficha de lead estructurada");
   }
 
-  return bloqueHerramienta.input as FichaLead;
+  return {
+    ficha: bloqueHerramienta.input as FichaLead,
+    uso: {
+      modelo: MODELOS.cualificador,
+      tokensEntrada: respuesta.usage.input_tokens,
+      tokensSalida: respuesta.usage.output_tokens,
+    },
+  };
 }
