@@ -29,6 +29,10 @@ app.use(
       directives: {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", "'unsafe-inline'"],
+        // Helmet restringe por defecto script-src-attr a 'none', lo que
+        // bloquea silenciosamente cualquier onclick="..." aunque scriptSrc
+        // permita 'unsafe-inline' — hay que igualarlo explícitamente.
+        scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", "data:"],
         connectSrc: ["'self'"],

@@ -8,22 +8,51 @@
   h1 { font-size: 1.4rem; }
   label { display: block; font-weight: 600; margin: 1rem 0 0.3rem; }
   input { width: 100%; padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
-  button { margin-top: 1.5rem; width: 100%; padding: 0.7rem; background: #1a4d8f; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
-  button:disabled { opacity: 0.6; }
+  .campo-password { position: relative; }
+  .campo-password input { padding-right: 2.5rem; }
+  .toggle-password {
+    position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; font-size: 0.85rem; color: #666; padding: 0.2rem;
+  }
+  button.principal { margin-top: 1.5rem; width: 100%; padding: 0.7rem; background: #1a4d8f; color: white; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; }
+  button.principal:disabled { opacity: 0.6; }
   #error { color: #c0392b; font-size: 0.9rem; margin-top: 0.75rem; }
+  #info { color: #1a9f4d; font-size: 0.9rem; margin-top: 0.75rem; }
+  a.olvide { display: inline-block; margin-top: 0.75rem; font-size: 0.85rem; color: #1a4d8f; }
 </style>
 </head>
 <body>
   <h1>Acceder</h1>
-  <label for="email">Email</label>
-  <input id="email" type="email" autocomplete="username" />
-  <label for="password">Contraseña</label>
-  <input id="password" type="password" autocomplete="current-password" />
-  <button id="entrar" onclick="entrar()">Entrar</button>
+  <!-- Formulario real (no solo botón + fetch): así los navegadores ofrecen
+       guardar la contraseña de forma nativa, como con cualquier web normal. -->
+  <form id="form-login">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="username" required />
+
+    <label for="password">Contraseña</label>
+    <div class="campo-password">
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+      <button type="button" class="toggle-password" id="toggle-password" onclick="alternarVisibilidad()">Ver</button>
+    </div>
+
+    <button type="submit" class="principal" id="entrar">Entrar</button>
+  </form>
+
+  <a href="/olvide-password.html" class="olvide">¿Has olvidado tu contraseña?</a>
   <p id="error"></p>
+  <p id="info"></p>
 
   <script>
-    async function entrar() {
+    function alternarVisibilidad() {
+      const campo = document.getElementById('password');
+      const boton = document.getElementById('toggle-password');
+      const esTexto = campo.type === 'text';
+      campo.type = esTexto ? 'password' : 'text';
+      boton.textContent = esTexto ? 'Ver' : 'Ocultar';
+    }
+
+    async function entrar(evento) {
+      evento.preventDefault();
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const boton = document.getElementById('entrar');
@@ -58,9 +87,9 @@
       }
     }
 
-    document.getElementById('password').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') entrar();
-    });
+    // submit (no solo click): dispara también con Enter, y es lo que hace
+    // que el navegador ofrezca "¿Guardar contraseña?" de forma nativa.
+    document.getElementById('form-login').addEventListener('submit', entrar);
   </script>
 </body>
 </html>
