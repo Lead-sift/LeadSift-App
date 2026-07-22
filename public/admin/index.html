@@ -247,19 +247,7 @@
         <thead><tr><th>ID</th><th>Nombre / Razón Social</th><th>NIF/CIF/NIE</th><th>Sector</th><th>Contacto</th><th>Activo</th></tr></thead>
         <tbody></tbody>
       </table>
-      <div class="panel-prompt" id="panel-prompt" style="display:none;">
-        <h3 id="prompt-titulo">Prompt de sistema</h3>
-        <div class="version-lista" id="version-lista"></div>
-        <h4>Nueva versión</h4>
-        <textarea id="prompt-contenido" rows="8" placeholder="Contenido del prompt..."></textarea>
-        <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
-          <select id="prompt-entorno" style="width:auto;">
-            <option value="sandbox">sandbox</option>
-            <option value="produccion">producción</option>
-          </select>
-          <button class="principal" onclick="guardarVersion()">Guardar versión</button>
-        </div>
-      </div>
+      <div id="ficha-cliente-container"></div>
     `;
     const empresas = await api('/api/admin/empresas');
     const cuerpo = document.querySelector('#tabla-empresas tbody');
@@ -268,45 +256,170 @@
       const fila = document.createElement('tr');
       fila.className = 'fila-clic';
       fila.innerHTML = `<td style="font-family:monospace; font-size:0.8rem; color:var(--gris);" title="uuid interno: ${e.id}">${e.codigo_cliente ?? '—'}</td><td>${e.nombre}</td><td>${e.nif_cif_nie ?? '—'}</td><td>${e.sector}</td><td>${e.nombre_contacto ?? '—'}</td><td>${e.activo ? 'Sí' : 'No'}</td>`;
-      fila.onclick = () => abrirPrompt(e);
+      fila.onclick = () => abrirFichaCliente(e);
       cuerpo.appendChild(fila);
     }
   }
 
-  async function abrirPrompt(empresa) {
-    empresaSeleccionada = empresa;
-    document.getElementById('panel-prompt').style.display = 'block';
-    document.getElementById('prompt-titulo').textContent = `Prompt de sistema — ${empresa.nombre}`;
-    const versiones = await api(`/api/admin/prompts/${empresa.id}`);
-    const lista = document.getElementById('version-lista');
-    lista.innerHTML = versiones.length ? '' : '<p>Sin versiones todavía.</p>';
-    for (const v of versiones) {
-      const div = document.createElement('div');
-      div.className = 'version';
-      div.innerHTML = `
-        v${v.version}
-        <span class="etiqueta-entorno">${v.entorno}</span>
-        ${v.activo ? '<span class="etiqueta-activo">activo en producción</span>' : ''}
-        <div style="white-space:pre-wrap; margin:0.3rem 0; max-height:100px; overflow:auto; font-size:0.8rem; color:#555;">${v.contenido}</div>
-        ${!v.activo ? `<button class="secundario" onclick="publicarVersion('${v.id}')">Publicar</button>` : ''}
-      `;
-      lista.appendChild(div);
+  function abrirFichaCliente(empresa) {
+    const emailNotificacion = empresa.canal_config?.email_notificacion ?? '';
+    const contenedor = document.getElementById('ficha-cliente-container');
+    contenedor.innerHTML = `
+      <div class="panel-prompt" style="margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <h3 style="margin:0;">${empresa.nombre} <span style="font-size:0.8rem; color:var(--gris); font-family:monospace;">(${empresa.codigo_cliente ?? empresa.id})</span></h3>
+          <button class="secundario" onclick="irAServiciosCliente(${JSON.stringify(empresa).replace(/"/g, '&quot;')})">Ir a Servicios de este cliente →</button>
+        </div>
+
+        <h4 style="margin-top:1.25rem;">Datos de la empresa</h4>
+        <div class="form-grid">
+          <div>
+            <label for="ficha-nombre">Nombre y Apellidos / Razón Social</label>
+            <input id="ficha-nombre" value="${empresa.nombre ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-nif">NIF / CIF / NIE</label>
+            <input id="ficha-nif" maxlength="9" value="${empresa.nif_cif_nie ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-sector">Sector</label>
+            <select id="ficha-sector">${opciones(SECTORES, empresa.sector)}</select>
+          </div>
+          <div>
+            <label for="ficha-facturacion">Facturación anual (€)</label>
+            <input id="ficha-facturacion" type="number" min="0" step="1000" value="${empresa.facturacion_anual ?? ''}" />
+          </div>
+        </div>
+
+        <h4 style="margin-top:1.25rem;">Dirección</h4>
+        <div class="form-grid">
+          <div>
+            <label for="ficha-tipovia">Tipo de vía</label>
+            <select id="ficha-tipovia">${opciones(TIPOS_VIA, empresa.tipo_via)}</select>
+          </div>
+          <div>
+            <label for="ficha-nombrevia">Nombre de la vía</label>
+            <input id="ficha-nombrevia" value="${empresa.nombre_via ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-numero">Número</label>
+            <input id="ficha-numero" value="${empresa.numero_via ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-piso">Piso</label>
+            <input id="ficha-piso" value="${empresa.piso ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-puerta">Puerta</label>
+            <input id="ficha-puerta" value="${empresa.puerta ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-cp">Código postal</label>
+            <input id="ficha-cp" maxlength="5" value="${empresa.codigo_postal ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-municipio">Municipio</label>
+            <input id="ficha-municipio" value="${empresa.municipio ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-provincia">Provincia</label>
+            <input id="ficha-provincia" value="${empresa.provincia ?? ''}" />
+          </div>
+        </div>
+
+        <h4 style="margin-top:1.25rem;">Persona de contacto</h4>
+        <div class="form-grid">
+          <div>
+            <label for="ficha-contacto-nombre">Nombre persona de contacto</label>
+            <input id="ficha-contacto-nombre" value="${empresa.nombre_contacto ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-contacto-rol">Rol</label>
+            <select id="ficha-contacto-rol">${opciones(ROLES_CONTACTO, empresa.rol_contacto)}</select>
+          </div>
+          <div>
+            <label for="ficha-contacto-email">Email de contacto</label>
+            <input id="ficha-contacto-email" type="email" value="${empresa.email_contacto ?? ''}" />
+          </div>
+          <div>
+            <label for="ficha-contacto-telefono">Teléfono de contacto</label>
+            <input id="ficha-contacto-telefono" value="${empresa.telefono_contacto ?? ''}" />
+          </div>
+        </div>
+
+        <h4 style="margin-top:1.25rem;">Configuración del servicio</h4>
+        <div class="form-grid">
+          <div>
+            <label for="ficha-tono">Tono de comunicación</label>
+            <input id="ficha-tono" value="${empresa.tono_comunicacion ?? 'cercano'}" />
+          </div>
+          <div>
+            <label for="ficha-idioma">Idioma principal</label>
+            <select id="ficha-idioma">
+              <option value="es" ${empresa.idioma_principal === 'es' ? 'selected' : ''}>Español</option>
+              <option value="ca" ${empresa.idioma_principal === 'ca' ? 'selected' : ''}>Català</option>
+              <option value="eu" ${empresa.idioma_principal === 'eu' ? 'selected' : ''}>Euskera</option>
+              <option value="gl" ${empresa.idioma_principal === 'gl' ? 'selected' : ''}>Galego</option>
+              <option value="en" ${empresa.idioma_principal === 'en' ? 'selected' : ''}>English</option>
+            </select>
+          </div>
+          <div>
+            <label for="ficha-email">Email de notificación de leads</label>
+            <input id="ficha-email" type="email" value="${emailNotificacion}" />
+          </div>
+          <div>
+            <label for="ficha-telefono-comunicacion">Teléfono de comunicación</label>
+            <input id="ficha-telefono-comunicacion" value="${empresa.telefono_comunicacion ?? ''}" />
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem; display:flex; gap:0.5rem; align-items:center;">
+          <button class="principal" onclick="guardarFichaCliente('${empresa.id}')">Guardar</button>
+          <p id="mensaje-ficha-cliente" style="margin:0; font-size:0.9rem;"></p>
+        </div>
+      </div>
+    `;
+  }
+
+  async function guardarFichaCliente(empresaId) {
+    const facturacionValor = document.getElementById('ficha-facturacion').value;
+    const cuerpo = {
+      nombre: document.getElementById('ficha-nombre').value.trim(),
+      sector: document.getElementById('ficha-sector').value,
+      tono_comunicacion: document.getElementById('ficha-tono').value.trim(),
+      idioma_principal: document.getElementById('ficha-idioma').value,
+      emailNotificacion: document.getElementById('ficha-email').value.trim(),
+      nif_cif_nie: document.getElementById('ficha-nif').value.trim(),
+      tipo_via: document.getElementById('ficha-tipovia').value,
+      nombre_via: document.getElementById('ficha-nombrevia').value.trim(),
+      numero_via: document.getElementById('ficha-numero').value.trim(),
+      piso: document.getElementById('ficha-piso').value.trim(),
+      puerta: document.getElementById('ficha-puerta').value.trim(),
+      codigo_postal: document.getElementById('ficha-cp').value.trim(),
+      municipio: document.getElementById('ficha-municipio').value.trim(),
+      provincia: document.getElementById('ficha-provincia').value.trim(),
+      nombre_contacto: document.getElementById('ficha-contacto-nombre').value.trim(),
+      rol_contacto: document.getElementById('ficha-contacto-rol').value,
+      email_contacto: document.getElementById('ficha-contacto-email').value.trim(),
+      telefono_contacto: document.getElementById('ficha-contacto-telefono').value.trim(),
+      telefono_comunicacion: document.getElementById('ficha-telefono-comunicacion').value.trim(),
+      facturacion_anual: facturacionValor ? Number(facturacionValor) : null,
+    };
+
+    const actualizada = await api(`/api/admin/empresas/${empresaId}`, { method: 'PUT', body: JSON.stringify(cuerpo) });
+    if (!actualizada || actualizada.error) {
+      document.getElementById('mensaje-ficha-cliente').textContent =
+        'Error al guardar: ' + JSON.stringify(actualizada?.error ?? 'desconocido');
+      return;
     }
+    await renderListadoClientes();
+    abrirFichaCliente(actualizada);
+    document.getElementById('mensaje-ficha-cliente').textContent = '✅ Cambios guardados correctamente.';
   }
 
-  async function guardarVersion() {
-    const contenido = document.getElementById('prompt-contenido').value.trim();
-    const entorno = document.getElementById('prompt-entorno').value;
-    if (!contenido || !empresaSeleccionada) return;
-    await api(`/api/admin/prompts/${empresaSeleccionada.id}`, { method: 'POST', body: JSON.stringify({ contenido, entorno }) });
-    document.getElementById('prompt-contenido').value = '';
-    abrirPrompt(empresaSeleccionada);
-  }
-
-  async function publicarVersion(promptId) {
-    if (!empresaSeleccionada) return;
-    await api(`/api/admin/prompts/${empresaSeleccionada.id}/${promptId}/publicar`, { method: 'POST' });
-    abrirPrompt(empresaSeleccionada);
+  function irAServiciosCliente(empresa) {
+    irA('servicios');
+    fijarClienteServicios(empresa);
   }
 
   // --- Vista: Nuevo cliente ---
@@ -331,7 +444,11 @@
   const TIPOS_VIA = ['Calle', 'Avenida', 'Plaza', 'Paseo', 'Carretera', 'Camino', 'Ronda', 'Travesía', 'Urbanización', 'Polígono', 'Otro'];
 
   function opciones(lista, seleccionado) {
-    return lista.map((v) => `<option value="${v}" ${v === seleccionado ? 'selected' : ''}>${v}</option>`).join('');
+    // Si el valor guardado no está en la lista predefinida (p.ej. datos
+    // antiguos o de prueba), se añade como opción extra para no perderlo
+    // ni sobrescribirlo silenciosamente al guardar sin tocar el campo.
+    const listaCompleta = seleccionado && !lista.includes(seleccionado) ? [seleccionado, ...lista] : lista;
+    return listaCompleta.map((v) => `<option value="${v}" ${v === seleccionado ? 'selected' : ''}>${v}</option>`).join('');
   }
 
   function renderNuevoCliente() {
