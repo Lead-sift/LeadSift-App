@@ -107,11 +107,16 @@
 
     <nav>
       <div class="titulo-grupo">Producción</div>
-      <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
-      <a class="enlace-nav" data-vista="clientes" onclick="irA('clientes')">Listado de clientes</a>
-      <a class="enlace-nav" data-vista="nuevo-cliente" onclick="irA('nuevo-cliente')">Nuevo cliente</a>
-      <a class="enlace-nav" data-vista="servicios" onclick="irA('servicios')">Servicios</a>
       <a class="enlace-nav" data-vista="leads" onclick="irA('leads')">Leads</a>
+      <a class="enlace-nav" data-vista="clientes" onclick="irA('clientes')">Listado de clientes</a>
+      <a class="enlace-nav" data-vista="servicios" onclick="irA('servicios')">Servicios</a>
+      <a class="enlace-nav" data-vista="nuevo-cliente" onclick="irA('nuevo-cliente')">Nuevo cliente</a>
+
+      <div class="titulo-grupo">Consultas</div>
+      <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
+
+      <div class="titulo-grupo">Mantenimiento</div>
+      <a class="enlace-nav" data-vista="usuarios" onclick="irA('usuarios')">Usuarios / Roles</a>
 
       <div class="titulo-grupo">Estadísticas</div>
       <a class="enlace-nav" data-vista="dashboard" onclick="irA('dashboard')">Dashboard</a>
@@ -184,6 +189,7 @@
     'nuevo-cliente': renderNuevoCliente,
     servicios: renderServicios,
     leads: renderLeads,
+    usuarios: renderUsuarios,
     dashboard: renderDashboard,
     extracciones: renderExtracciones,
   };
@@ -1259,6 +1265,183 @@
     }
     abrirDetalleLead(conversacionId);
     actualizarTransferidoEnTabla(conversacionId, true);
+  }
+
+  // --- Vista: Usuarios / Roles ---
+  const ETIQUETAS_ROL = {
+    owner: 'Propietario (interno)',
+    admin: 'Administrador (interno)',
+    soporte: 'Soporte (interno)',
+    client_user: 'Cliente (externo)',
+  };
+  const ROLES_USUARIO = ['owner', 'admin', 'soporte', 'client_user'];
+
+  async function renderUsuarios() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Usuarios / Roles</h2>
+      <button class="principal" onclick="abrirFormularioUsuario(null)">+ Nuevo usuario</button>
+      <table id="tabla-usuarios" style="margin-top:1rem;">
+        <thead><tr><th>Email</th><th>Nombre</th><th>Rol</th><th>Empresa (si es cliente)</th><th>Acciones</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="panel-usuario"></div>
+    `;
+    cargarUsuarios();
+  }
+
+  let usuariosCache = [];
+
+  async function cargarUsuarios() {
+    const datos = await api('/api/admin/usuarios');
+    usuariosCache = datos;
+    const cuerpo = document.querySelector('#tabla-usuarios tbody');
+    cuerpo.innerHTML = '';
+    for (const u of datos) {
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${u.email ?? '—'}</td>
+        <td>${u.nombre ?? '—'}</td>
+        <td>${ETIQUETAS_ROL[u.rol] ?? u.rol}</td>
+        <td>${u.empresaNombre ?? '—'}</td>
+        <td>
+          <button class="secundario" onclick='abrirFormularioUsuario(${JSON.stringify(u).replace(/'/g, "&apos;")})'>Editar</button>
+          <button class="secundario" onclick="eliminarUsuario('${u.id}', '${(u.email ?? '').replace(/'/g, "\\'")}')">Eliminar</button>
+        </td>
+      `;
+      cuerpo.appendChild(fila);
+    }
+  }
+
+  async function abrirFormularioUsuario(usuario) {
+    const panel = document.getElementById('panel-usuario');
+    const empresas = await api('/api/admin/empresas');
+    const opcionesEmpresa = empresas
+      .map((e) => `<option value="${e.id}" ${usuario?.empresa_id === e.id ? 'selected' : ''}>${e.nombre}</option>`)
+      .join('');
+    const esNuevo = !usuario;
+
+    panel.innerHTML = `
+      <div class="panel-prompt" style="margin-top:1.5rem; max-width:600px;">
+        <h3>${esNuevo ? 'Nuevo usuario' : `Editar usuario — ${usuario.email}`}</h3>
+        <div class="form-grid">
+          ${esNuevo ? `
+          <div>
+            <label for="usuario-email">Email</label>
+            <input id="usuario-email" type="email" placeholder="persona@ejemplo.com" />
+          </div>
+          <div>
+            <label for="usuario-password">Contraseña inicial</label>
+            <input id="usuario-password" type="password" placeholder="Mínimo 8 caracteres" />
+          </div>` : ''}
+          <div>
+            <label for="usuario-nombre">Nombre</label>
+            <input id="usuario-nombre" value="${usuario?.nombre ?? ''}" />
+          </div>
+          <div>
+            <label for="usuario-rol">Rol</label>
+            <select id="usuario-rol" onchange="actualizarVisibilidadEmpresaUsuario()">
+              ${ROLES_USUARIO.map((r) => `<option value="${r}" ${usuario?.rol === r ? 'selected' : ''}>${ETIQUETAS_ROL[r]}</option>`).join('')}
+            </select>
+          </div>
+          <div id="usuario-empresa-contenedor" style="${(usuario?.rol ?? 'owner') === 'client_user' ? '' : 'display:none;'}">
+            <label for="usuario-empresa">Empresa (si es cliente externo)</label>
+            <select id="usuario-empresa"><option value="">—</option>${opcionesEmpresa}</select>
+          </div>
+        </div>
+        <div style="margin-top:1rem; display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+          <button class="principal" onclick="guardarUsuario(${esNuevo ? 'null' : `'${usuario.id}'`})">Guardar</button>
+          ${!esNuevo ? `<button class="secundario" onclick="mostrarCambioPassword('${usuario.id}')">Cambiar contraseña</button>` : ''}
+          <button class="secundario" onclick="document.getElementById('panel-usuario').innerHTML=''">Cancelar</button>
+        </div>
+        <div id="usuario-password-contenedor"></div>
+        <p id="mensaje-usuario" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+      </div>
+    `;
+  }
+
+  function actualizarVisibilidadEmpresaUsuario() {
+    const rol = document.getElementById('usuario-rol').value;
+    document.getElementById('usuario-empresa-contenedor').style.display = rol === 'client_user' ? '' : 'none';
+  }
+
+  async function guardarUsuario(usuarioId) {
+    const rol = document.getElementById('usuario-rol').value;
+    const nombre = document.getElementById('usuario-nombre').value.trim();
+    const empresaId = rol === 'client_user' ? (document.getElementById('usuario-empresa').value || null) : null;
+    const mensaje = document.getElementById('mensaje-usuario');
+
+    if (rol === 'client_user' && !empresaId) {
+      mensaje.textContent = 'Un usuario externo (cliente) requiere una empresa asignada';
+      return;
+    }
+
+    let resultado;
+    if (!usuarioId) {
+      const email = document.getElementById('usuario-email').value.trim();
+      const password = document.getElementById('usuario-password').value;
+      if (!email || !password || password.length < 8) {
+        mensaje.textContent = 'Email y contraseña (mínimo 8 caracteres) son obligatorios';
+        return;
+      }
+      resultado = await api('/api/admin/usuarios', {
+        method: 'POST',
+        body: JSON.stringify({ email, password, rol, nombre, empresaId }),
+      });
+    } else {
+      resultado = await api(`/api/admin/usuarios/${usuarioId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ rol, nombre, empresaId }),
+      });
+    }
+
+    if (!resultado || resultado.error) {
+      mensaje.textContent = 'Error: ' + JSON.stringify(resultado?.error ?? 'desconocido');
+      return;
+    }
+
+    await cargarUsuarios();
+    document.getElementById('panel-usuario').innerHTML = '';
+  }
+
+  function mostrarCambioPassword(usuarioId) {
+    const contenedor = document.getElementById('usuario-password-contenedor');
+    contenedor.innerHTML = `
+      <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--borde);">
+        <label for="nueva-password-usuario">Nueva contraseña</label>
+        <input id="nueva-password-usuario" type="password" placeholder="Mínimo 8 caracteres" style="max-width:300px;" />
+        <button class="secundario" style="margin-top:0.5rem;" onclick="guardarNuevaPassword('${usuarioId}')">Guardar contraseña</button>
+      </div>
+    `;
+  }
+
+  async function guardarNuevaPassword(usuarioId) {
+    const password = document.getElementById('nueva-password-usuario').value;
+    const mensaje = document.getElementById('mensaje-usuario');
+    if (!password || password.length < 8) {
+      mensaje.textContent = 'La contraseña debe tener al menos 8 caracteres';
+      return;
+    }
+    const resultado = await api(`/api/admin/usuarios/${usuarioId}/password`, {
+      method: 'PUT',
+      body: JSON.stringify({ password }),
+    });
+    if (!resultado || resultado.error) {
+      mensaje.textContent = 'Error: ' + JSON.stringify(resultado?.error ?? 'desconocido');
+      return;
+    }
+    document.getElementById('usuario-password-contenedor').innerHTML = '';
+    mensaje.textContent = '✅ Contraseña actualizada correctamente.';
+  }
+
+  async function eliminarUsuario(usuarioId, email) {
+    if (!confirm(`¿Eliminar definitivamente el usuario ${email}? Esta acción no se puede deshacer.`)) return;
+    const resultado = await api(`/api/admin/usuarios/${usuarioId}`, { method: 'DELETE' });
+    if (resultado?.error) {
+      alert('Error: ' + resultado.error);
+      return;
+    }
+    cargarUsuarios();
   }
 
   // --- Arranque ---

@@ -18,9 +18,10 @@ import { extraccionesAdminRouter } from "./routes/admin/extracciones.js";
 import { documentosAdminRouter } from "./routes/admin/documentos.js";
 import { imagenesCatalogoAdminRouter } from "./routes/admin/imagenesCatalogo.js";
 import { leadsAdminRouter } from "./routes/admin/leads.js";
+import { usuariosAdminRouter } from "./routes/admin/usuarios.js";
 import { portalRouter } from "./routes/portal/index.js";
 import { authRouter } from "./routes/auth.js";
-import { requiereInterno, requiereClientUser, requiereSesion } from "./middleware/auth.js";
+import { requiereInterno, requiereClientUser, requiereSesion, requiereRol } from "./middleware/auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -65,6 +66,7 @@ app.use("/api/admin/extracciones", requiereInterno, extraccionesAdminRouter);
 app.use("/api/admin/documentos", requiereInterno, documentosAdminRouter);
 app.use("/api/admin/imagenes-catalogo", requiereInterno, imagenesCatalogoAdminRouter);
 app.use("/api/admin/leads", requiereInterno, leadsAdminRouter);
+app.use("/api/admin/usuarios", requiereRol("owner", "admin"), usuariosAdminRouter);
 app.use("/api/portal", requiereClientUser, portalRouter);
 app.use("/api/auth", authRouter);
 app.get("/api/me", requiereSesion, (req, res) => res.json(req.perfil));
