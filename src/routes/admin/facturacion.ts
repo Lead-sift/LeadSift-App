@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabase } from "../../services/supabaseClient.js";
 import { generarFacturaPdf } from "../../services/generarFacturaPdf.js";
 import { obtenerTransporteEmail } from "../../services/emailClient.js";
+import { registrarEntradaGestion } from "../../services/gestionClientes.js";
 
 export const facturacionAdminRouter = Router();
 
@@ -156,7 +157,7 @@ async function cargarReciboConEmpresa(reciboId: string) {
   const { data: empresa } = await supabase
     .from("empresas")
     .select(
-      "nombre, nif_cif_nie, codigo_cliente, tipo_via, nombre_via, numero_via, municipio, provincia, codigo_postal, cuenta_facturacion, email_contacto, canal_config"
+      "nombre, nif_cif_nie, codigo_cliente, tipo_via, nombre_via, numero_via, municipio, provincia, codigo_postal, cuenta_facturacion, email_facturacion, email_contacto, canal_config"
     )
     .eq("id", recibo.empresa_id)
     .single();
@@ -196,6 +197,19 @@ facturacionAdminRouter.post("/:reciboId/emitir", async (req, res) => {
     .single();
 
   if (errorUpdate) return res.status(500).json({ error: errorUpdate.message });
+
+  await registrarEntradaGestion({
+    empresaId: recibo.empresa_id,
+    categoria: "factura",
+    automatico: true,
+    titulo: `Factura ${numeroFactura} emitida`,
+    descripcion: `Periodo ${recibo.mes}/${recibo.anio} — Total: ${recibo.total} €`,
+    creadoPor: req.perfil?.id ?? null,
+    archivoBucket: "facturas-clientes",
+    archivoPath: pdfPath,
+    archivoNombre: `${numeroFactura}.pdf`,
+  });
+
   res.json(actualizado);
 });
 
@@ -225,7 +239,8 @@ facturacionAdminRouter.post("/:reciboId/enviar", async (req, res) => {
     return res.status(400).json({ error: "Primero hay que emitir la factura" });
   }
 
-  const destinatario = empresa.email_contacto || (empresa.canal_config as any)?.email_notificacion;
+  const destinatario =
+    (empresa as any).email_facturacion || empresa.email_contacto || (empresa.canal_config as any)?.email_notificacion;
   if (!destinatario) {
     return res.status(400).json({ error: "Esta empresa no tiene ningún email de contacto configurado" });
   }

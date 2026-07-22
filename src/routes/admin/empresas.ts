@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { supabase } from "../../services/supabaseClient.js";
+import { registrarEntradaGestion } from "../../services/gestionClientes.js";
 
 export const empresasAdminRouter = Router();
 
@@ -71,6 +72,7 @@ const esquemaEmpresa = z.object({
   telefono_comunicacion: z.string().max(20).optional().or(z.literal("")),
   facturacion_anual: z.number().optional().nullable(),
   cuenta_facturacion: z.string().max(50).optional().or(z.literal("")),
+  email_facturacion: z.string().email().max(150).optional().or(z.literal("")),
 });
 
 function construirDatosEmpresa(datos: z.infer<typeof esquemaEmpresa>) {
@@ -93,12 +95,26 @@ empresasAdminRouter.post("/", async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
 
-  // Repositorio de facturas del cliente: Supabase Storage no tiene carpetas
-  // reales (son solo prefijos de ruta), así que se sube un marcador vacío
-  // para que la "carpeta" del cliente exista y sea visible desde ya.
-  await supabase.storage.from("facturas-clientes").upload(`${data.id}/.keep`, new Blob([""]), {
-    contentType: "text/plain",
-    upsert: true,
+  // Repositorio de facturas y de gestión del cliente: Supabase Storage no
+  // tiene carpetas reales (son solo prefijos de ruta), así que se sube un
+  // marcador vacío para que la "carpeta" del cliente exista desde ya.
+  await Promise.all([
+    supabase.storage.from("facturas-clientes").upload(`${data.id}/.keep`, new Blob([""]), {
+      contentType: "text/plain",
+      upsert: true,
+    }),
+    supabase.storage.from("gestion-clientes").upload(`${data.id}/.keep`, new Blob([""]), {
+      contentType: "text/plain",
+      upsert: true,
+    }),
+  ]);
+
+  await registrarEntradaGestion({
+    empresaId: data.id,
+    categoria: "otros",
+    automatico: true,
+    titulo: "Cliente dado de alta",
+    creadoPor: req.perfil?.id ?? null,
   });
 
   res.status(201).json(data);
@@ -107,6 +123,12 @@ empresasAdminRouter.post("/", async (req, res) => {
 empresasAdminRouter.put("/:id", async (req, res) => {
   const parseo = esquemaEmpresa.partial().safeParse(req.body);
   if (!parseo.success) return res.status(400).json({ error: parseo.error.flatten() });
+
+  const { data: anterior } = await supabase
+    .from("empresas")
+    .select("cuenta_facturacion")
+    .eq("id", req.params.id)
+    .single();
 
   const { emailNotificacion, ...datosEmpresa } = parseo.data;
   const actualizacion: Record<string, unknown> = { ...datosEmpresa };
@@ -122,6 +144,29 @@ empresasAdminRouter.put("/:id", async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: error.message });
+
+  const cambioCuenta =
+    datosEmpresa.cuenta_facturacion !== undefined && datosEmpresa.cuenta_facturacion !== anterior?.cuenta_facturacion;
+
+  if (cambioCuenta) {
+    await registrarEntradaGestion({
+      empresaId: req.params.id,
+      categoria: "otros",
+      automatico: true,
+      titulo: "Cuenta bancaria modificada",
+      descripcion: `Nueva cuenta de facturación: ${datosEmpresa.cuenta_facturacion || "(vacía)"}`,
+      creadoPor: req.perfil?.id ?? null,
+    });
+  } else {
+    await registrarEntradaGestion({
+      empresaId: req.params.id,
+      categoria: "otros",
+      automatico: true,
+      titulo: "Datos del cliente modificados",
+      creadoPor: req.perfil?.id ?? null,
+    });
+  }
+
   res.json(data);
 });
 

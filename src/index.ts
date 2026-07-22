@@ -22,6 +22,7 @@ import { usuariosAdminRouter } from "./routes/admin/usuarios.js";
 import { paquetesAdminRouter } from "./routes/admin/paquetes.js";
 import { facturacionAdminRouter } from "./routes/admin/facturacion.js";
 import { actividadAdminRouter } from "./routes/admin/actividad.js";
+import { gestionAdminRouter } from "./routes/admin/gestion.js";
 import { portalRouter } from "./routes/portal/index.js";
 import { authRouter } from "./routes/auth.js";
 import { requiereInterno, requiereClientUser, requiereSesion, requiereRol } from "./middleware/auth.js";
@@ -73,6 +74,7 @@ app.use("/api/admin/usuarios", requiereRol("owner", "admin"), usuariosAdminRoute
 app.use("/api/admin/paquetes", requiereInterno, paquetesAdminRouter);
 app.use("/api/admin/facturacion", requiereInterno, facturacionAdminRouter);
 app.use("/api/admin/actividad", requiereInterno, actividadAdminRouter);
+app.use("/api/admin/gestion", requiereInterno, gestionAdminRouter);
 app.use("/api/portal", requiereClientUser, portalRouter);
 app.use("/api/auth", authRouter);
 app.get("/api/me", requiereSesion, (req, res) => res.json(req.perfil));

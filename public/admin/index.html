@@ -128,6 +128,7 @@
       <div class="titulo-grupo">Consultas</div>
       <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
       <a class="enlace-nav" data-vista="actividad" onclick="irA('actividad')">Actividad de los agentes</a>
+      <a class="enlace-nav" data-vista="ficha-gestion" onclick="irA('ficha-gestion')">Ficha de Gestión</a>
 
       <div class="titulo-grupo">Mantenimiento</div>
       <a class="enlace-nav" data-vista="usuarios" onclick="irA('usuarios')">Usuarios / Roles</a>
@@ -200,6 +201,7 @@
   const vistas = {
     consultas: renderConsultasGenerales,
     actividad: renderActividad,
+    'ficha-gestion': renderFichaGestion,
     clientes: renderListadoClientes,
     'nuevo-cliente': renderNuevoCliente,
     servicios: renderServicios,
@@ -306,6 +308,161 @@
         <tbody>${filasEnCurso}</tbody>
       </table>
     `;
+  }
+
+  // --- Vista: Ficha de Gestión ---
+  const CATEGORIAS_GESTION = [
+    { valor: 'factura', etiqueta: 'Factura' },
+    { valor: 'contrato', etiqueta: 'Contrato' },
+    { valor: 'contrato_lopd', etiqueta: 'Contrato cesión datos personales' },
+    { valor: 'otros', etiqueta: 'Otros' },
+  ];
+  const ETIQUETAS_CATEGORIA_GESTION = {
+    factura: 'Factura',
+    contrato: 'Contrato',
+    contrato_lopd: 'Contrato cesión datos personales',
+    otros: 'Otros',
+  };
+
+  function renderFichaGestion() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Ficha de Gestión</h2>
+      <p style="color:var(--gris); font-size:0.9rem; margin-top:-0.5rem;">
+        Traza de documentos y notas de cada cliente: contratos, cesión de datos personales, facturas y cambios relevantes.
+      </p>
+      <div class="filtros">
+        <input id="buscar-cliente-gestion" placeholder="Buscar por nombre o NIF..." style="max-width:400px;" />
+        <button class="secundario" onclick="buscarClientesGestion()">Buscar</button>
+      </div>
+      <div id="resultados-busqueda-gestion"></div>
+      <div id="cliente-fijado-gestion"></div>
+    `;
+    document.getElementById('buscar-cliente-gestion').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') buscarClientesGestion();
+    });
+  }
+
+  async function buscarClientesGestion() {
+    const q = document.getElementById('buscar-cliente-gestion').value.trim();
+    const contenedor = document.getElementById('resultados-busqueda-gestion');
+    contenedor.innerHTML = '';
+    if (!q) return;
+
+    const datos = await api(`/api/admin/empresas?q=${encodeURIComponent(q)}`);
+    const tabla = document.createElement('table');
+    tabla.innerHTML = '<thead><tr><th>Código</th><th>Nombre / Razón Social</th><th>NIF/CIF/NIE</th></tr></thead><tbody></tbody>';
+    const cuerpo = tabla.querySelector('tbody');
+    for (const e of datos) {
+      const fila = document.createElement('tr');
+      fila.className = 'fila-clic';
+      fila.innerHTML = `<td>${e.codigo_cliente ?? '—'}</td><td>${e.nombre}</td><td>${e.nif_cif_nie ?? '—'}</td>`;
+      fila.onclick = () => fijarClienteGestion(e);
+      cuerpo.appendChild(fila);
+    }
+    contenedor.innerHTML = '';
+    contenedor.appendChild(tabla);
+  }
+
+  function fijarClienteGestion(empresa) {
+    document.getElementById('resultados-busqueda-gestion').innerHTML = '';
+    document.getElementById('buscar-cliente-gestion').value = '';
+
+    const contenedor = document.getElementById('cliente-fijado-gestion');
+    contenedor.innerHTML = `
+      <div class="panel-prompt" style="margin-top:1.5rem;">
+        <h3>${empresa.nombre} <span style="font-size:0.8rem; color:var(--gris); font-family:monospace;">(${empresa.codigo_cliente ?? empresa.id})</span></h3>
+
+        <h4>Añadir entrada</h4>
+        <div class="form-grid">
+          <div>
+            <label for="gestion-categoria">Categoría</label>
+            <select id="gestion-categoria">${CATEGORIAS_GESTION.map((c) => `<option value="${c.valor}">${c.etiqueta}</option>`).join('')}</select>
+          </div>
+          <div>
+            <label for="gestion-titulo">Título</label>
+            <input id="gestion-titulo" placeholder="Ej: Contrato firmado 2026" />
+          </div>
+        </div>
+        <label for="gestion-descripcion" style="display:block; font-size:0.8rem; font-weight:600; margin:0.75rem 0 0.25rem; color:var(--gris);">Descripción / nota</label>
+        <textarea id="gestion-descripcion" rows="3" placeholder="Detalles opcionales..."></textarea>
+        <label for="gestion-archivo" style="display:block; font-size:0.8rem; font-weight:600; margin:0.5rem 0 0.25rem; color:var(--gris);">Documento adjunto (opcional)</label>
+        <input type="file" id="gestion-archivo" />
+        <button class="principal" style="margin-top:0.75rem;" onclick="anadirEntradaGestion('${empresa.id}')">Añadir entrada</button>
+        <p id="mensaje-gestion" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+
+        <h4 style="margin-top:1.5rem;">Historial</h4>
+        <div id="lista-entradas-gestion"><p>Cargando...</p></div>
+      </div>
+    `;
+    cargarEntradasGestion(empresa.id);
+  }
+
+  async function cargarEntradasGestion(empresaId) {
+    const datos = await api(`/api/admin/gestion/${empresaId}`);
+    const contenedor = document.getElementById('lista-entradas-gestion');
+    if (!datos.length) {
+      contenedor.innerHTML = '<p style="color:var(--gris);">Sin entradas todavía.</p>';
+      return;
+    }
+    contenedor.innerHTML = datos
+      .map(
+        (e) => `
+        <div style="border-bottom:1px solid var(--borde); padding:0.75rem 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <div>
+              <span class="badge badge-${e.automatico ? 'frio' : 'confirmado'}">${ETIQUETAS_CATEGORIA_GESTION[e.categoria] ?? e.categoria}</span>
+              ${e.automatico ? '<span style="font-size:0.72rem; color:var(--gris); margin-left:0.3rem;">(automático)</span>' : ''}
+              <strong style="margin-left:0.4rem;">${e.titulo}</strong>
+            </div>
+            <span style="font-size:0.78rem; color:var(--gris);">${new Date(e.created_at).toLocaleString('es-ES')}${e.creadoPorNombre ? ' — ' + e.creadoPorNombre : ''}</span>
+          </div>
+          ${e.descripcion ? `<p style="margin:0.3rem 0 0; font-size:0.88rem; color:#444;">${e.descripcion}</p>` : ''}
+          ${e.archivo_path ? `<button class="secundario" style="margin-top:0.4rem;" onclick="verArchivoGestion('${e.id}')">Ver documento (${e.archivo_nombre ?? 'archivo'})</button>` : ''}
+        </div>
+      `
+      )
+      .join('');
+  }
+
+  async function anadirEntradaGestion(empresaId) {
+    const categoria = document.getElementById('gestion-categoria').value;
+    const titulo = document.getElementById('gestion-titulo').value.trim();
+    const descripcion = document.getElementById('gestion-descripcion').value.trim();
+    const archivo = document.getElementById('gestion-archivo').files[0];
+    const mensaje = document.getElementById('mensaje-gestion');
+
+    if (!titulo) { mensaje.textContent = 'El título es obligatorio'; return; }
+
+    const formData = new FormData();
+    formData.append('categoria', categoria);
+    formData.append('titulo', titulo);
+    if (descripcion) formData.append('descripcion', descripcion);
+    if (archivo) formData.append('archivo', archivo);
+
+    const res = await fetch(`/api/admin/gestion/${empresaId}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const resultado = await res.json();
+
+    if (!res.ok) {
+      mensaje.textContent = 'Error: ' + JSON.stringify(resultado.error ?? 'desconocido');
+      return;
+    }
+
+    document.getElementById('gestion-titulo').value = '';
+    document.getElementById('gestion-descripcion').value = '';
+    document.getElementById('gestion-archivo').value = '';
+    mensaje.textContent = '✅ Entrada añadida.';
+    cargarEntradasGestion(empresaId);
+  }
+
+  async function verArchivoGestion(entradaId) {
+    const resultado = await api(`/api/admin/gestion/archivo/${entradaId}`);
+    if (resultado?.error) { alert(resultado.error); return; }
+    window.open(resultado.url, '_blank');
   }
 
   async function buscarGeneral() {
@@ -525,7 +682,12 @@
         <div class="form-grid">
           <div>
             <label for="ficha-cuenta-facturacion">Cuenta de facturación (IBAN)</label>
-            <input id="ficha-cuenta-facturacion" value="${empresa.cuenta_facturacion ?? ''}" placeholder="ES00 0000 0000 0000 0000 0000" />
+            <input id="ficha-cuenta-facturacion" value="${empresa.cuenta_facturacion ?? ''}" placeholder="ES00 0000 0000 0000 0000 0000" oninput="verificarIbanFicha()" onblur="verificarIbanFicha()" />
+            <p id="ficha-iban-verificacion" style="font-size:0.8rem; margin:0.3rem 0 0;"></p>
+          </div>
+          <div>
+            <label for="ficha-email-facturacion">Email de envío de datos de facturación</label>
+            <input id="ficha-email-facturacion" type="email" value="${empresa.email_facturacion ?? ''}" placeholder="facturacion@empresacliente.com" />
           </div>
         </div>
 
@@ -537,6 +699,61 @@
     `;
 
     cargarResumenPaqueteFicha(empresa.id);
+    verificarIbanFicha();
+  }
+
+  // --- Verificación automática de IBAN + BIC/SWIFT (bancos españoles) ---
+  const BANCOS_ES_BIC = {
+    '0049': { nombre: 'Banco Santander', bic: 'BSCHESMM' },
+    '0075': { nombre: 'Banco Popular (Santander)', bic: 'POPUESMM' },
+    '0081': { nombre: 'Banco Sabadell', bic: 'BSABESBB' },
+    '0128': { nombre: 'Bankinter', bic: 'BKBKESMM' },
+    '0182': { nombre: 'BBVA', bic: 'BBVAESMM' },
+    '2100': { nombre: 'CaixaBank', bic: 'CAIXESBB' },
+    '2038': { nombre: 'Bankia (CaixaBank)', bic: 'CAHMESMM' },
+    '2103': { nombre: 'Unicaja Banco', bic: 'UCJAES2M' },
+    '2085': { nombre: 'Ibercaja', bic: 'CAZRES2Z' },
+    '1465': { nombre: 'ING', bic: 'INGDESMM' },
+    '1491': { nombre: 'Openbank', bic: 'OPENESMM' },
+    '0073': { nombre: 'Openbank', bic: 'OPENESMM' },
+  };
+
+  // Validación estándar del dígito de control IBAN (mod 97 == 1).
+  function ibanValido(iban) {
+    const limpio = iban.replace(/\s+/g, '').toUpperCase();
+    if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(limpio)) return false;
+    const reordenado = limpio.slice(4) + limpio.slice(0, 4);
+    const numerico = reordenado.replace(/[A-Z]/g, (c) => (c.charCodeAt(0) - 55).toString());
+    let resto = 0;
+    for (let i = 0; i < numerico.length; i += 7) {
+      resto = Number(String(resto) + numerico.substr(i, 7)) % 97;
+    }
+    return resto === 1;
+  }
+
+  function verificarIbanFicha() {
+    const campo = document.getElementById('ficha-cuenta-facturacion');
+    const resultado = document.getElementById('ficha-iban-verificacion');
+    if (!campo || !resultado) return;
+
+    const valor = campo.value.trim();
+    if (!valor) { resultado.textContent = ''; return; }
+
+    if (!ibanValido(valor)) {
+      resultado.innerHTML = '<span style="color:#c0392b;">✗ IBAN no válido (revisa el dígito de control)</span>';
+      return;
+    }
+
+    const limpio = valor.replace(/\s+/g, '').toUpperCase();
+    if (limpio.startsWith('ES') && limpio.length === 24) {
+      const entidad = limpio.slice(4, 8);
+      const banco = BANCOS_ES_BIC[entidad];
+      resultado.innerHTML = banco
+        ? `<span style="color:#1a9f4d;">✓ IBAN válido — ${banco.nombre} — SWIFT/BIC: ${banco.bic}</span>`
+        : `<span style="color:#1a9f4d;">✓ IBAN válido</span> <span style="color:var(--gris);">(entidad ${entidad} no está en el catálogo local; verifica el BIC manualmente)</span>`;
+    } else {
+      resultado.innerHTML = '<span style="color:#1a9f4d;">✓ IBAN válido</span>';
+    }
   }
 
   async function cargarResumenPaqueteFicha(empresaId) {
@@ -582,6 +799,7 @@
       telefono_contacto: document.getElementById('ficha-contacto-telefono').value.trim(),
       telefono_comunicacion: document.getElementById('ficha-telefono-comunicacion').value.trim(),
       cuenta_facturacion: document.getElementById('ficha-cuenta-facturacion').value.trim(),
+      email_facturacion: document.getElementById('ficha-email-facturacion').value.trim(),
       facturacion_anual: facturacionValor ? Number(facturacionValor) : null,
     };
 
