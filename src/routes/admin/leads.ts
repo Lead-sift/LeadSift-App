@@ -24,7 +24,7 @@ async function calcularUltimaActividad(conversacionIds: string[]): Promise<Map<s
   return mapa;
 }
 
-leadsAdminRouter.get("/", async (_req, res) => {
+leadsAdminRouter.get("/", async (req, res) => {
   const { data: conversaciones, error } = await supabase
     .from("conversaciones")
     .select("id, empresa_id, canal, intencion, resultado, transferido, remitente_contacto, created_at, empresas(nombre)")
@@ -36,18 +36,19 @@ leadsAdminRouter.get("/", async (_req, res) => {
   const ids = (conversaciones ?? []).map((c) => c.id);
   const { data: leadsData } = await supabase
     .from("leads")
-    .select("conversacion_id, score")
+    .select("conversacion_id, score, nombre_contacto, necesidad, contacto")
     .in("conversacion_id", ids.length ? ids : [""]);
 
-  const mapaLeads = new Map((leadsData ?? []).map((l) => [l.conversacion_id, l.score]));
+  const mapaLeads = new Map((leadsData ?? []).map((l) => [l.conversacion_id, l]));
   const mapaActividad = await calcularUltimaActividad(ids);
 
-  const resultado = (conversaciones ?? []).map((c) => {
+  let resultado = (conversaciones ?? []).map((c) => {
     const ultimaActividad = mapaActividad.get(c.id) ?? c.created_at;
+    const lead = mapaLeads.get(c.id);
     return {
       id: c.id,
       estado: calcularEstado(c.resultado, ultimaActividad),
-      temperatura: mapaLeads.get(c.id) ?? "frio",
+      temperatura: lead?.score ?? "frio",
       cliente: (c as any).empresas?.nombre ?? "—",
       empresaId: c.empresa_id,
       resultado: c.resultado,
@@ -56,8 +57,29 @@ leadsAdminRouter.get("/", async (_req, res) => {
       transferido: c.transferido,
       createdAt: c.created_at,
       ultimaActividad,
+      nombreContacto: lead?.nombre_contacto ?? null,
+      necesidad: lead?.necesidad ?? null,
+      contacto: lead?.contacto ?? null,
     };
   });
+
+  const q = typeof req.query.q === "string" ? req.query.q.trim().toLowerCase() : "";
+  if (q) {
+    resultado = resultado.filter((r) =>
+      [
+        r.id,
+        r.cliente,
+        r.canal,
+        r.resultado,
+        r.remitenteContacto,
+        r.nombreContacto,
+        r.necesidad,
+        r.contacto,
+      ]
+        .filter(Boolean)
+        .some((campo) => String(campo).toLowerCase().includes(q))
+    );
+  }
 
   res.json(resultado);
 });

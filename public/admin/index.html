@@ -199,6 +199,16 @@
     const contenido = document.getElementById('contenido');
     contenido.innerHTML = `
       <h2>Consultas Generales</h2>
+
+      <h3>Buscar cliente o lead</h3>
+      <p style="color:var(--gris); font-size:0.85rem; margin-top:-0.5rem;">Busca por cualquier campo: nombre, NIF/CIF, sector, contacto, teléfono, email, necesidad...</p>
+      <div class="filtros">
+        <input id="busqueda-general" placeholder="Buscar cliente o lead..." style="max-width:400px;" />
+        <button class="secundario" onclick="buscarGeneral()">Buscar</button>
+      </div>
+      <div id="resultados-busqueda-general"></div>
+
+      <h3 style="margin-top:2rem;">Todas las consultas</h3>
       <div class="filtros">
         <select id="filtro-canal"><option value="">Todos los canales</option><option value="email">Email</option><option value="formulario">Formulario</option><option value="whatsapp">WhatsApp</option></select>
         <select id="filtro-intencion"><option value="">Toda intención</option><option value="spam">Spam</option><option value="informativa">Informativa</option><option value="lead_potencial">Lead potencial</option><option value="consulta_disponibilidad">Consulta disponibilidad</option></select>
@@ -209,7 +219,59 @@
         <tbody></tbody>
       </table>
     `;
+    document.getElementById('busqueda-general').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') buscarGeneral();
+    });
     cargarConsultasGenerales();
+  }
+
+  async function buscarGeneral() {
+    const q = document.getElementById('busqueda-general').value.trim();
+    const contenedor = document.getElementById('resultados-busqueda-general');
+    if (!q) { contenedor.innerHTML = ''; return; }
+    contenedor.innerHTML = '<p>Buscando...</p>';
+
+    const [clientes, leads] = await Promise.all([
+      api(`/api/admin/empresas?q=${encodeURIComponent(q)}`),
+      api(`/api/admin/leads?q=${encodeURIComponent(q)}`),
+    ]);
+
+    if (!clientes.length && !leads.length) {
+      contenedor.innerHTML = '<p style="color:var(--gris);">Sin resultados.</p>';
+      return;
+    }
+
+    const tabla = document.createElement('table');
+    tabla.innerHTML = '<thead><tr><th>Tipo</th><th>Resultado</th><th>Detalle</th></tr></thead><tbody></tbody>';
+    const cuerpo = tabla.querySelector('tbody');
+
+    for (const c of clientes) {
+      const fila = document.createElement('tr');
+      fila.className = 'fila-clic';
+      fila.innerHTML = `<td><span class="badge badge-confirmado">Cliente</span></td><td>${c.nombre} <span style="font-family:monospace; font-size:0.78rem; color:var(--gris);">(${c.codigo_cliente ?? c.id})</span></td><td>${c.sector ?? '—'}</td>`;
+      fila.onclick = () => irAFichaCliente(c);
+      cuerpo.appendChild(fila);
+    }
+    for (const l of leads) {
+      const fila = document.createElement('tr');
+      fila.className = 'fila-clic';
+      fila.innerHTML = `<td><span class="badge badge-en_curso">Lead</span></td><td>${l.cliente} — ${l.canal}</td><td>${l.nombreContacto ?? l.remitenteContacto ?? '—'}</td>`;
+      fila.onclick = () => irADetalleLead(l.id);
+      cuerpo.appendChild(fila);
+    }
+
+    contenedor.innerHTML = '';
+    contenedor.appendChild(tabla);
+  }
+
+  function irAFichaCliente(empresa) {
+    irA('clientes');
+    abrirFichaCliente(empresa);
+  }
+
+  function irADetalleLead(conversacionId) {
+    irA('leads');
+    abrirDetalleLead(conversacionId);
   }
 
   async function cargarConsultasGenerales() {
@@ -990,8 +1052,6 @@
   }
 
   async function renderLeads() {
-    const empresas = await api('/api/admin/empresas');
-    const opcionesCliente = empresas.map((e) => `<option value="${e.id}">${e.nombre}</option>`).join('');
     const contenido = document.getElementById('contenido');
     contenido.innerHTML = `
       <h2>Leads</h2>
@@ -1010,7 +1070,6 @@
         </select>
         <select id="filtro-lead-cliente">
           <option value="">Todos los clientes</option>
-          ${opcionesCliente}
         </select>
         <button class="secundario" onclick="cargarLeads()">Filtrar</button>
       </div>
@@ -1036,6 +1095,13 @@
       </div>
     `;
     cargarLeads();
+    api('/api/admin/empresas').then((empresas) => {
+      const select = document.getElementById('filtro-lead-cliente');
+      if (!select) return;
+      select.innerHTML =
+        '<option value="">Todos los clientes</option>' +
+        empresas.map((e) => `<option value="${e.id}">${e.nombre}</option>`).join('');
+    });
   }
 
   let leadsCache = [];

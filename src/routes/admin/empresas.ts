@@ -11,7 +11,18 @@ empresasAdminRouter.get("/", async (req, res) => {
   if (q) {
     const texto = `%${q}%`;
     consulta = consulta.or(
-      `nombre.ilike.${texto},nif_cif_nie.ilike.${texto},codigo_cliente.ilike.${texto}`
+      [
+        `nombre.ilike.${texto}`,
+        `nif_cif_nie.ilike.${texto}`,
+        `codigo_cliente.ilike.${texto}`,
+        `sector.ilike.${texto}`,
+        `nombre_contacto.ilike.${texto}`,
+        `email_contacto.ilike.${texto}`,
+        `telefono_contacto.ilike.${texto}`,
+        `telefono_comunicacion.ilike.${texto}`,
+        `municipio.ilike.${texto}`,
+        `provincia.ilike.${texto}`,
+      ].join(",")
     );
   }
 
