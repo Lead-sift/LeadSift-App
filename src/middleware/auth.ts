@@ -32,7 +32,7 @@ async function autenticar(req: Request, res: Response): Promise<Perfil | null> {
 
   const { data: perfil, error: errorPerfil } = await supabase
     .from("perfiles")
-    .select("id, rol, empresa_id, nombre")
+    .select("id, rol, empresa_id, nombre, nif")
     .eq("id", userData.user.id)
     .single();
 

@@ -5,6 +5,7 @@ export interface Perfil {
   rol: Rol;
   empresa_id: string | null;
   nombre: string | null;
+  nif: string | null;
 }
 
 export const ROLES_INTERNOS: Rol[] = ["owner", "admin", "soporte"];

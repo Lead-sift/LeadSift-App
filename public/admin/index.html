@@ -1730,7 +1730,7 @@
       <h2>Usuarios / Roles</h2>
       <button class="principal" onclick="abrirFormularioUsuario(null)">+ Nuevo usuario</button>
       <table id="tabla-usuarios" style="margin-top:1rem;">
-        <thead><tr><th>Email</th><th>Nombre</th><th>Rol</th><th>Empresa (si es cliente)</th><th>Acciones</th></tr></thead>
+        <thead><tr><th>Email</th><th>Nombre</th><th>NIF</th><th>Rol</th><th>Empresa (si es cliente)</th><th>Acciones</th></tr></thead>
         <tbody></tbody>
       </table>
       <div id="panel-usuario"></div>
@@ -1750,6 +1750,7 @@
       fila.innerHTML = `
         <td>${u.email ?? '—'}</td>
         <td>${u.nombre ?? '—'}</td>
+        <td>${u.nif ?? '—'}</td>
         <td>${ETIQUETAS_ROL[u.rol] ?? u.rol}</td>
         <td>${u.empresaNombre ?? '—'}</td>
         <td>
@@ -1787,6 +1788,10 @@
             <input id="usuario-nombre" value="${usuario?.nombre ?? ''}" />
           </div>
           <div>
+            <label for="usuario-nif">NIF</label>
+            <input id="usuario-nif" value="${usuario?.nif ?? ''}" placeholder="12345678A" />
+          </div>
+          <div>
             <label for="usuario-rol">Rol</label>
             <select id="usuario-rol" onchange="actualizarVisibilidadEmpresaUsuario()">
               ${ROLES_USUARIO.map((r) => `<option value="${r}" ${usuario?.rol === r ? 'selected' : ''}>${ETIQUETAS_ROL[r]}</option>`).join('')}
@@ -1816,6 +1821,7 @@
   async function guardarUsuario(usuarioId) {
     const rol = document.getElementById('usuario-rol').value;
     const nombre = document.getElementById('usuario-nombre').value.trim();
+    const nif = document.getElementById('usuario-nif').value.trim();
     const empresaId = rol === 'client_user' ? (document.getElementById('usuario-empresa').value || null) : null;
     const mensaje = document.getElementById('mensaje-usuario');
 
@@ -1834,12 +1840,12 @@
       }
       resultado = await api('/api/admin/usuarios', {
         method: 'POST',
-        body: JSON.stringify({ email, password, rol, nombre, empresaId }),
+        body: JSON.stringify({ email, password, rol, nombre, nif, empresaId }),
       });
     } else {
       resultado = await api(`/api/admin/usuarios/${usuarioId}`, {
         method: 'PUT',
-        body: JSON.stringify({ rol, nombre, empresaId }),
+        body: JSON.stringify({ rol, nombre, nif, empresaId }),
       });
     }
 

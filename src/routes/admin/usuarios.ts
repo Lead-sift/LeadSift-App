@@ -33,6 +33,7 @@ const esquemaCrear = z.object({
   password: z.string().min(8),
   rol: z.enum(ROLES),
   nombre: z.string().optional().nullable(),
+  nif: z.string().max(15).optional().nullable(),
   empresaId: z.string().uuid().optional().nullable(),
 });
 
@@ -40,7 +41,7 @@ usuariosAdminRouter.post("/", async (req, res) => {
   const parseo = esquemaCrear.safeParse(req.body);
   if (!parseo.success) return res.status(400).json({ error: parseo.error.flatten() });
 
-  const { email, password, rol, nombre, empresaId } = parseo.data;
+  const { email, password, rol, nombre, nif, empresaId } = parseo.data;
   if (rol === "client_user" && !empresaId) {
     return res.status(400).json({ error: "Un usuario externo (client_user) requiere una empresa asignada" });
   }
@@ -60,6 +61,7 @@ usuariosAdminRouter.post("/", async (req, res) => {
       id: usuario.user.id,
       rol,
       nombre: nombre ?? null,
+      nif: nif ?? null,
       empresa_id: rol === "client_user" ? empresaId : null,
     })
     .select()
@@ -78,6 +80,7 @@ usuariosAdminRouter.post("/", async (req, res) => {
 const esquemaActualizar = z.object({
   rol: z.enum(ROLES).optional(),
   nombre: z.string().optional().nullable(),
+  nif: z.string().max(15).optional().nullable(),
   empresaId: z.string().uuid().optional().nullable(),
 });
 
@@ -88,6 +91,7 @@ usuariosAdminRouter.put("/:id", async (req, res) => {
   const actualizacion: Record<string, unknown> = {};
   if (parseo.data.rol !== undefined) actualizacion.rol = parseo.data.rol;
   if (parseo.data.nombre !== undefined) actualizacion.nombre = parseo.data.nombre;
+  if (parseo.data.nif !== undefined) actualizacion.nif = parseo.data.nif;
   if (parseo.data.empresaId !== undefined) actualizacion.empresa_id = parseo.data.empresaId;
 
   if (actualizacion.rol && actualizacion.rol !== "client_user") actualizacion.empresa_id = null;
