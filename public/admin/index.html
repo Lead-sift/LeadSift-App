@@ -567,7 +567,9 @@
             </select>
           </div>
         </div>
-        <textarea id="doc-contenido" rows="6" placeholder="Contenido del documento..." style="margin-top:0.5rem;"></textarea>
+        <label for="doc-archivo" style="display:block; font-size:0.8rem; font-weight:600; margin:0.5rem 0 0.25rem; color:var(--gris);">Archivo (.txt, .md, .csv, .json — texto plano)</label>
+        <input type="file" id="doc-archivo" accept=".txt,.md,.csv,.json,text/plain" />
+        <p id="doc-archivo-preview" style="font-size:0.78rem; color:var(--gris); margin:0.4rem 0 0; white-space:pre-wrap; max-height:80px; overflow:auto;"></p>
         <button class="principal" style="margin-top:0.5rem;" onclick="anadirDocumentoServicios('${empresa.id}')">Añadir documento</button>
         <p id="mensaje-documentos-servicios" style="margin-top:0.5rem; font-size:0.9rem;"></p>
       </div>
@@ -575,6 +577,18 @@
 
     cargarPromptServicios(empresa.id);
     cargarDocumentosServicios(empresa.id);
+
+    document.getElementById('doc-archivo').addEventListener('change', async (e) => {
+      const archivo = e.target.files[0];
+      const previa = document.getElementById('doc-archivo-preview');
+      if (!archivo) { previa.textContent = ''; return; }
+      try {
+        const texto = await leerArchivoComoTexto(archivo);
+        previa.textContent = `Vista previa (${archivo.name}, ${texto.length} caracteres): ${texto.slice(0, 300)}${texto.length > 300 ? '…' : ''}`;
+      } catch {
+        previa.textContent = 'No se pudo leer este archivo como texto.';
+      }
+    });
   }
 
   async function cargarPromptServicios(empresaId) {
@@ -620,15 +634,36 @@
       : '<p style="font-size:0.85rem; color:var(--gris);">Sin documentos todavía.</p>';
   }
 
+  function leerArchivoComoTexto(archivo) {
+    return new Promise((resolve, reject) => {
+      const lector = new FileReader();
+      lector.onload = () => resolve(String(lector.result));
+      lector.onerror = () => reject(lector.error);
+      lector.readAsText(archivo, 'UTF-8');
+    });
+  }
+
   async function anadirDocumentoServicios(empresaId) {
     const tipo = document.getElementById('doc-tipo').value;
-    const contenido = document.getElementById('doc-contenido').value.trim();
+    const inputArchivo = document.getElementById('doc-archivo');
     const mensaje = document.getElementById('mensaje-documentos-servicios');
-    if (!contenido) { mensaje.textContent = 'El contenido no puede estar vacío'; return; }
+    const archivo = inputArchivo.files[0];
+
+    if (!archivo) { mensaje.textContent = 'Selecciona un archivo primero'; return; }
+
+    let contenido;
+    try {
+      contenido = (await leerArchivoComoTexto(archivo)).trim();
+    } catch (e) {
+      mensaje.textContent = 'No se pudo leer el archivo';
+      return;
+    }
+    if (!contenido) { mensaje.textContent = 'El archivo está vacío'; return; }
 
     await api(`/api/admin/documentos/${empresaId}`, { method: 'POST', body: JSON.stringify({ tipo, contenido }) });
-    document.getElementById('doc-contenido').value = '';
-    mensaje.textContent = 'Documento añadido y activo para las próximas consultas.';
+    inputArchivo.value = '';
+    document.getElementById('doc-archivo-preview').textContent = '';
+    mensaje.textContent = `Documento "${archivo.name}" añadido y activo para las próximas consultas.`;
     cargarDocumentosServicios(empresaId);
   }
 
