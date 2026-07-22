@@ -16,6 +16,7 @@ import { asistenteAdminRouter } from "./routes/admin/asistente.js";
 import { consultasAdminRouter } from "./routes/admin/consultas.js";
 import { extraccionesAdminRouter } from "./routes/admin/extracciones.js";
 import { documentosAdminRouter } from "./routes/admin/documentos.js";
+import { imagenesCatalogoAdminRouter } from "./routes/admin/imagenesCatalogo.js";
 import { portalRouter } from "./routes/portal/index.js";
 import { authRouter } from "./routes/auth.js";
 import { requiereInterno, requiereClientUser, requiereSesion } from "./middleware/auth.js";
@@ -38,7 +39,8 @@ app.use(
         // permita 'unsafe-inline' — hay que igualarlo explícitamente.
         scriptSrcAttr: ["'unsafe-inline'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:"],
+        // Permite mostrar las imágenes del catálogo, alojadas en Supabase Storage.
+        imgSrc: ["'self'", "data:", "https://*.supabase.co"],
         connectSrc: ["'self'"],
       },
     },
@@ -60,6 +62,7 @@ app.use("/api/admin/asistente", requiereInterno, asistenteAdminRouter);
 app.use("/api/admin/consultas", requiereInterno, consultasAdminRouter);
 app.use("/api/admin/extracciones", requiereInterno, extraccionesAdminRouter);
 app.use("/api/admin/documentos", requiereInterno, documentosAdminRouter);
+app.use("/api/admin/imagenes-catalogo", requiereInterno, imagenesCatalogoAdminRouter);
 app.use("/api/portal", requiereClientUser, portalRouter);
 app.use("/api/auth", authRouter);
 app.get("/api/me", requiereSesion, (req, res) => res.json(req.perfil));

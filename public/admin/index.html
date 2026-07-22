@@ -572,11 +572,24 @@
         <p id="doc-archivo-preview" style="font-size:0.78rem; color:var(--gris); margin:0.4rem 0 0; white-space:pre-wrap; max-height:80px; overflow:auto;"></p>
         <button class="principal" style="margin-top:0.5rem;" onclick="anadirDocumentoServicios('${empresa.id}')">Añadir documento</button>
         <p id="mensaje-documentos-servicios" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+
+        <h3 style="margin-top:2rem;">Catálogo con fotos (PDF o Word)</h3>
+        <p style="font-size:0.85rem; color:var(--gris); margin-top:-0.5rem;">
+          Sube el catálogo tal cual lo tengas. Se extrae el texto automáticamente y también cada foto incrustada por separado (PDF o Word) — ponle nombre a cada una abajo.
+        </p>
+        <input type="file" id="catalogo-archivo" accept=".pdf,.docx" />
+        <button class="principal" style="margin-top:0.5rem;" onclick="subirCatalogoConFotos('${empresa.id}')">Subir y extraer</button>
+        <p id="mensaje-catalogo-servicios" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+
+        <h4 style="margin-top:1.5rem;">Imágenes del catálogo</h4>
+        <p style="font-size:0.8rem; color:var(--gris); margin-top:-0.5rem;">Ponle nombre/descripción a cada imagen para que quede lista como producto.</p>
+        <div id="grid-imagenes-catalogo" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:1rem; margin-top:0.75rem;"></div>
       </div>
     `;
 
     cargarPromptServicios(empresa.id);
     cargarDocumentosServicios(empresa.id);
+    cargarImagenesCatalogo(empresa.id);
 
     document.getElementById('doc-archivo').addEventListener('change', async (e) => {
       const archivo = e.target.files[0];
@@ -670,6 +683,65 @@
   async function borrarDocumentoServicios(id, empresaId) {
     await api(`/api/admin/documentos/${id}`, { method: 'DELETE' });
     cargarDocumentosServicios(empresaId);
+  }
+
+  async function subirCatalogoConFotos(empresaId) {
+    const input = document.getElementById('catalogo-archivo');
+    const mensaje = document.getElementById('mensaje-catalogo-servicios');
+    const archivo = input.files[0];
+    if (!archivo) { mensaje.textContent = 'Selecciona un archivo PDF o Word primero'; return; }
+
+    mensaje.textContent = 'Subiendo y extrayendo (puede tardar unos segundos)...';
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+
+    const res = await fetch(`/api/admin/documentos/${empresaId}/extraer`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }, // sin Content-Type: el navegador pone el boundary de multipart
+      body: formData,
+    });
+    const datos = await res.json();
+
+    if (!res.ok) {
+      mensaje.textContent = 'Error: ' + (datos.error || 'no se pudo procesar el archivo');
+      return;
+    }
+
+    mensaje.textContent = `Listo: texto extraído y ${datos.imagenes.length} imagen(es) añadidas para etiquetar.`;
+    input.value = '';
+    cargarDocumentosServicios(empresaId);
+    cargarImagenesCatalogo(empresaId);
+  }
+
+  async function cargarImagenesCatalogo(empresaId) {
+    const imagenes = await api(`/api/admin/imagenes-catalogo/${empresaId}`);
+    const grid = document.getElementById('grid-imagenes-catalogo');
+    grid.innerHTML = imagenes.length
+      ? imagenes.map((img) => `
+          <div style="border:1px solid var(--borde); border-radius:8px; overflow:hidden; background:white;">
+            <img src="${img.url_publica}" style="width:100%; height:140px; object-fit:cover; display:block;" />
+            <div style="padding:0.5rem;">
+              <input id="etiqueta-${img.id}" placeholder="Nombre/descripción del producto" value="${img.etiqueta ?? ''}" style="font-size:0.8rem;" />
+              <div style="display:flex; gap:0.3rem; margin-top:0.4rem;">
+                <button class="secundario" style="flex:1; padding:0.3rem; font-size:0.75rem;" onclick="guardarEtiquetaImagen('${img.id}', '${empresaId}')">Guardar</button>
+                <button class="secundario" style="padding:0.3rem 0.5rem; font-size:0.75rem;" onclick="borrarImagenCatalogo('${img.id}', '${empresaId}')">✕</button>
+              </div>
+              <div style="font-size:0.7rem; color:var(--gris); margin-top:0.3rem;">${img.documento_origen}${img.pagina ? ' · pág. ' + img.pagina : ''}</div>
+            </div>
+          </div>
+        `).join('')
+      : '<p style="font-size:0.85rem; color:var(--gris);">Sin imágenes todavía.</p>';
+  }
+
+  async function guardarEtiquetaImagen(id, empresaId) {
+    const etiqueta = document.getElementById(`etiqueta-${id}`).value.trim();
+    await api(`/api/admin/imagenes-catalogo/${id}`, { method: 'PUT', body: JSON.stringify({ etiqueta }) });
+    cargarImagenesCatalogo(empresaId);
+  }
+
+  async function borrarImagenCatalogo(id, empresaId) {
+    await api(`/api/admin/imagenes-catalogo/${id}`, { method: 'DELETE' });
+    cargarImagenesCatalogo(empresaId);
   }
 
   async function guardarCanalServicio(empresaId, canal) {

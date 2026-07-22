@@ -1,8 +1,60 @@
 import { Router } from "express";
+import multer from "multer";
 import { z } from "zod";
 import { supabase } from "../../services/supabaseClient.js";
+import { extraerDocumento, subirImagenesCatalogo } from "../../services/extraerDocumento.js";
 
 export const documentosAdminRouter = Router();
+
+const subidaArchivo = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+});
+
+// Sube un PDF o Word: extrae el texto (se guarda como documento normal,
+// tipo "catalogo") y extrae también las imágenes (páginas del PDF, o fotos
+// incrustadas del Word), que quedan sin etiquetar hasta que el admin les
+// ponga nombre/descripción de producto en la pestaña Servicios.
+documentosAdminRouter.post("/:empresaId/extraer", subidaArchivo.single("archivo"), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "Falta el archivo" });
+
+  try {
+    const { texto, imagenes } = await extraerDocumento(req.file.buffer, req.file.originalname);
+
+    const { data: ultimo } = await supabase
+      .from("documentos_empresa")
+      .select("version")
+      .eq("empresa_id", req.params.empresaId)
+      .eq("tipo", "catalogo")
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const { data: documento, error: errorDocumento } = await supabase
+      .from("documentos_empresa")
+      .insert({
+        empresa_id: req.params.empresaId,
+        tipo: "catalogo",
+        contenido: texto.trim() || "(sin texto extraíble)",
+        version: (ultimo?.version ?? 0) + 1,
+      })
+      .select()
+      .single();
+
+    if (errorDocumento) throw new Error(errorDocumento.message);
+
+    const imagenesGuardadas = await subirImagenesCatalogo(
+      req.params.empresaId,
+      req.file.originalname,
+      imagenes
+    );
+
+    res.status(201).json({ documento, imagenes: imagenesGuardadas });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
 
 documentosAdminRouter.get("/:empresaId", async (req, res) => {
   const { data, error } = await supabase
