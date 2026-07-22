@@ -80,7 +80,13 @@ export async function procesarMensajeEntrante(
 
   const { intencion, uso: usoClasificacion } = await clasificarIntencion(mensaje.texto);
   await registrarConsumo(mensaje.empresaId, mensajeCliente?.id ?? null, usoClasificacion);
-  await supabase.from("conversaciones").update({ intencion }).eq("id", conversacion.id);
+
+  // El spam se da por finalizado y resuelto automáticamente: no tiene
+  // sentido dejarlo pendiente de revisión manual en la página de Leads.
+  await supabase
+    .from("conversaciones")
+    .update({ intencion, resultado: intencion === "spam" ? "spam" : null })
+    .eq("id", conversacion.id);
 
   if (intencion === "spam") {
     return { conversacionId: conversacion.id, intencion, lead: null };
