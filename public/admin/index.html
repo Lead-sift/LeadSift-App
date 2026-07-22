@@ -406,7 +406,7 @@
     }
   }
 
-  function abrirFichaCliente(empresa) {
+  async function abrirFichaCliente(empresa) {
     const emailNotificacion = empresa.canal_config?.email_notificacion ?? '';
     const contenedor = document.getElementById('ficha-cliente-container');
     contenedor.innerHTML = `
@@ -415,6 +415,9 @@
           <h3 style="margin:0;">${empresa.nombre} <span style="font-size:0.8rem; color:var(--gris); font-family:monospace;">(${empresa.codigo_cliente ?? empresa.id})</span></h3>
           <button class="secundario" onclick="irAServiciosCliente(${JSON.stringify(empresa).replace(/"/g, '&quot;')})">Ir a Servicios de este cliente →</button>
         </div>
+
+        <h4 style="margin-top:1.25rem;">Paquete contratado</h4>
+        <div id="ficha-paquete-contratado"><p style="color:var(--gris); font-size:0.9rem;">Cargando...</p></div>
 
         <h4 style="margin-top:1.25rem;">Datos de la empresa</h4>
         <div class="form-grid">
@@ -531,6 +534,28 @@
           <p id="mensaje-ficha-cliente" style="margin:0; font-size:0.9rem;"></p>
         </div>
       </div>
+    `;
+
+    cargarResumenPaqueteFicha(empresa.id);
+  }
+
+  async function cargarResumenPaqueteFicha(empresaId) {
+    const contenedor = document.getElementById('ficha-paquete-contratado');
+    if (!contenedor) return;
+
+    const asignado = await api(`/api/admin/paquetes/asignado/${empresaId}`);
+    if (!asignado) {
+      contenedor.innerHTML = '<p style="color:var(--gris); font-size:0.9rem;">Sin paquete asignado todavía. Configúralo en Servicios.</p>';
+      return;
+    }
+
+    const personalizado = Object.values(asignado.override ?? {}).some((v) => v !== null && v !== undefined);
+    contenedor.innerHTML = `
+      <p style="margin:0;">
+        <strong>${asignado.paquete.nombre}</strong> — ${descripcionPrecioCorta(asignado.efectivo)}
+        ${personalizado ? '<span class="etiqueta-paquete-actual" style="background:var(--ciruela);">Precio personalizado</span>' : ''}
+      </p>
+      ${personalizado ? `<p style="font-size:0.78rem; color:var(--gris); margin:0.2rem 0 0;">Precio general del paquete: ${descripcionPrecioCorta(asignado.paquete)}</p>` : ''}
     `;
   }
 
@@ -935,6 +960,12 @@
     `;
   }
 
+  function descripcionPrecioCorta(p) {
+    return p.metodo_facturacion === 'lead'
+      ? `${formatoEuros(p.precio_por_lead)}/lead`
+      : `${formatoEuros(p.coste_mensual)}/mes`;
+  }
+
   async function cargarPaqueteServicios(empresaId) {
     const contenedor = document.getElementById('paquete-comparativa-servicios');
     const [paquetes, asignado] = await Promise.all([
@@ -954,19 +985,24 @@
         ${paquetes
           .map((p) => {
             const esActual = p.id === paqueteIdActual;
+            const override = esActual ? (asignado?.override ?? {}) : {};
+            const personalizado = esActual && Object.values(override).some((v) => v !== null && v !== undefined);
+            const datosPrecio = esActual && asignado?.efectivo ? asignado.efectivo : p;
             const servicios = SERVICIOS_PAQUETE.map(
               (s) => `<li class="${p.servicios_incluidos?.[s.clave] ? '' : 'no-incluido'}">${p.servicios_incluidos?.[s.clave] ? '✓' : '✗'} ${s.etiqueta}</li>`
             ).join('');
             return `
               <div class="paquete-columna ${esActual ? 'seleccionado' : ''}">
                 ${esActual ? '<span class="etiqueta-paquete-actual">Paquete actual</span>' : ''}
+                ${personalizado ? '<span class="etiqueta-paquete-actual" style="background:var(--ciruela);">Precio personalizado</span>' : ''}
                 <h4>${p.nombre}</h4>
                 <p style="font-size:0.82rem; color:var(--gris); margin:0;">${p.descripcion ?? ''}</p>
-                ${bloquePrecioPaquete(p)}
-                <p style="font-size:0.78rem; color:var(--gris); margin:0;">Implementación: ${formatoEuros(p.coste_implementacion)}</p>
+                ${bloquePrecioPaquete(datosPrecio)}
+                ${personalizado ? `<p style="font-size:0.75rem; color:var(--gris); margin:0 0 0.4rem;">Precio general del paquete: ${descripcionPrecioCorta(p)}</p>` : ''}
+                <p style="font-size:0.78rem; color:var(--gris); margin:0;">Implementación: ${formatoEuros(datosPrecio.coste_implementacion)}</p>
                 <ul class="paquete-servicios">${servicios}</ul>
                 ${esActual
-                  ? `<button class="secundario" onclick='mostrarOverridePaquete("${empresaId}", ${JSON.stringify(p).replace(/'/g, '&apos;')}, ${JSON.stringify(asignado.override ?? {}).replace(/'/g, '&apos;')})'>Personalizar precios para este cliente</button>`
+                  ? `<button class="secundario" onclick='mostrarOverridePaquete("${empresaId}", ${JSON.stringify(p).replace(/'/g, '&apos;')}, ${JSON.stringify(override).replace(/'/g, '&apos;')})'>Personalizar precios para este cliente</button>`
                   : `<button class="principal" onclick="asignarPaqueteServicios('${empresaId}', '${p.id}')">Seleccionar este paquete</button>`}
               </div>
             `;
