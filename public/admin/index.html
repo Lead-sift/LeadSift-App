@@ -127,6 +127,7 @@
 
       <div class="titulo-grupo">Consultas</div>
       <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
+      <a class="enlace-nav" data-vista="actividad" onclick="irA('actividad')">Actividad de los agentes</a>
 
       <div class="titulo-grupo">Mantenimiento</div>
       <a class="enlace-nav" data-vista="usuarios" onclick="irA('usuarios')">Usuarios / Roles</a>
@@ -198,6 +199,7 @@
   // --- Navegación entre vistas ---
   const vistas = {
     consultas: renderConsultasGenerales,
+    actividad: renderActividad,
     clientes: renderListadoClientes,
     'nuevo-cliente': renderNuevoCliente,
     servicios: renderServicios,
@@ -227,10 +229,7 @@
     contenido.innerHTML = `
       <h2>Consultas Generales</h2>
 
-      <h3>Actividad de los agentes en tiempo real</h3>
-      <div id="panel-actividad-agentes"><p>Cargando...</p></div>
-
-      <h3 style="margin-top:2rem;">Buscar cliente o lead</h3>
+      <h3>Buscar cliente o lead</h3>
       <p style="color:var(--gris); font-size:0.85rem; margin-top:-0.5rem;">Busca por cualquier campo: nombre, NIF/CIF, sector, contacto, teléfono, email, necesidad...</p>
       <div class="filtros">
         <input id="busqueda-general" placeholder="Buscar cliente o lead..." style="max-width:400px;" />
@@ -253,17 +252,28 @@
       if (e.key === 'Enter') buscarGeneral();
     });
     cargarConsultasGenerales();
-
-    cargarActividadAgentes();
-    intervaloActividad = setInterval(cargarActividadAgentes, 4000);
   }
 
+  // --- Vista: Actividad de los agentes ---
   const ETIQUETAS_ETAPA = {
     clasificando: 'Clasificando intención',
     cualificando: 'Cualificando lead',
     respondiendo: 'Generando respuesta',
     notificando: 'Notificando al comercial',
   };
+
+  function renderActividad() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Actividad de los agentes</h2>
+      <p style="color:var(--gris); font-size:0.9rem; margin-top:-0.5rem;">
+        Qué está procesando el motor de IA ahora mismo, y el volumen de consultas gestionadas recientemente.
+      </p>
+      <div id="panel-actividad-agentes"><p>Cargando...</p></div>
+    `;
+    cargarActividadAgentes();
+    intervaloActividad = setInterval(cargarActividadAgentes, 4000);
+  }
 
   async function cargarActividadAgentes() {
     const datos = await api('/api/admin/actividad');
