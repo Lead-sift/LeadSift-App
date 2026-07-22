@@ -20,6 +20,7 @@ import { imagenesCatalogoAdminRouter } from "./routes/admin/imagenesCatalogo.js"
 import { leadsAdminRouter } from "./routes/admin/leads.js";
 import { usuariosAdminRouter } from "./routes/admin/usuarios.js";
 import { paquetesAdminRouter } from "./routes/admin/paquetes.js";
+import { facturacionAdminRouter } from "./routes/admin/facturacion.js";
 import { portalRouter } from "./routes/portal/index.js";
 import { authRouter } from "./routes/auth.js";
 import { requiereInterno, requiereClientUser, requiereSesion, requiereRol } from "./middleware/auth.js";
@@ -69,6 +70,7 @@ app.use("/api/admin/imagenes-catalogo", requiereInterno, imagenesCatalogoAdminRo
 app.use("/api/admin/leads", requiereInterno, leadsAdminRouter);
 app.use("/api/admin/usuarios", requiereRol("owner", "admin"), usuariosAdminRouter);
 app.use("/api/admin/paquetes", requiereInterno, paquetesAdminRouter);
+app.use("/api/admin/facturacion", requiereInterno, facturacionAdminRouter);
 app.use("/api/portal", requiereClientUser, portalRouter);
 app.use("/api/auth", authRouter);
 app.get("/api/me", requiereSesion, (req, res) => res.json(req.perfil));

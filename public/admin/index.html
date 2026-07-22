@@ -123,6 +123,7 @@
       <a class="enlace-nav" data-vista="servicios" onclick="irA('servicios')">Servicios</a>
       <a class="enlace-nav" data-vista="nuevo-cliente" onclick="irA('nuevo-cliente')">Nuevo cliente</a>
       <a class="enlace-nav" data-vista="productos" onclick="irA('productos')">Productos</a>
+      <a class="enlace-nav" data-vista="facturacion" onclick="irA('facturacion')">Facturación</a>
 
       <div class="titulo-grupo">Consultas</div>
       <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
@@ -202,6 +203,7 @@
     servicios: renderServicios,
     leads: renderLeads,
     productos: renderProductos,
+    facturacion: renderFacturacion,
     usuarios: renderUsuarios,
     dashboard: renderDashboard,
     extracciones: renderExtracciones,
@@ -454,6 +456,14 @@
           </div>
         </div>
 
+        <h4 style="margin-top:1.25rem;">Facturación</h4>
+        <div class="form-grid">
+          <div>
+            <label for="ficha-cuenta-facturacion">Cuenta de facturación (IBAN)</label>
+            <input id="ficha-cuenta-facturacion" value="${empresa.cuenta_facturacion ?? ''}" placeholder="ES00 0000 0000 0000 0000 0000" />
+          </div>
+        </div>
+
         <div style="margin-top:1.25rem; display:flex; gap:0.5rem; align-items:center;">
           <button class="principal" onclick="guardarFichaCliente('${empresa.id}')">Guardar</button>
           <p id="mensaje-ficha-cliente" style="margin:0; font-size:0.9rem;"></p>
@@ -484,6 +494,7 @@
       email_contacto: document.getElementById('ficha-contacto-email').value.trim(),
       telefono_contacto: document.getElementById('ficha-contacto-telefono').value.trim(),
       telefono_comunicacion: document.getElementById('ficha-telefono-comunicacion').value.trim(),
+      cuenta_facturacion: document.getElementById('ficha-cuenta-facturacion').value.trim(),
       facturacion_anual: facturacionValor ? Number(facturacionValor) : null,
     };
 
@@ -1571,6 +1582,97 @@
     if (!confirm(`¿Eliminar el paquete "${nombre}"? Los clientes que ya lo tengan asignado mantienen sus precios.`)) return;
     await api(`/api/admin/paquetes/${paqueteId}`, { method: 'DELETE' });
     cargarPaquetes();
+  }
+
+  // --- Vista: Facturación ---
+  function mesActual() {
+    const hoy = new Date();
+    return { anio: hoy.getFullYear(), mes: hoy.getMonth() + 1 };
+  }
+
+  const NOMBRES_MES = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ];
+
+  async function renderFacturacion() {
+    const { anio, mes } = mesActual();
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Facturación</h2>
+      <p style="color:var(--gris); font-size:0.9rem; margin-top:-0.5rem;">
+        Recibos mensuales generados automáticamente a partir del paquete asignado a cada cliente y su recuento real de leads.
+        La conexión con el banco para el cobro se configurará más adelante.
+      </p>
+      <div class="filtros">
+        <select id="filtro-factura-mes">
+          ${NOMBRES_MES.map((n, i) => `<option value="${i + 1}" ${i + 1 === mes ? 'selected' : ''}>${n}</option>`).join('')}
+        </select>
+        <input id="filtro-factura-anio" type="number" value="${anio}" style="max-width:100px;" />
+        <button class="secundario" onclick="cargarRecibos()">Ver mes</button>
+        <button class="principal" onclick="generarRecibosMes()">Generar recibos de este mes</button>
+      </div>
+      <p id="mensaje-facturacion" style="font-size:0.9rem;"></p>
+      <table id="tabla-recibos">
+        <thead>
+          <tr>
+            <th>Cliente</th><th>Paquete</th><th>Método</th><th>Leads contados</th>
+            <th>Incluidos</th><th>Exceso</th><th>Implementación</th><th>Total</th><th>Generado</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot></tfoot>
+      </table>
+    `;
+    cargarRecibos();
+  }
+
+  async function cargarRecibos() {
+    const anio = Number(document.getElementById('filtro-factura-anio').value);
+    const mes = Number(document.getElementById('filtro-factura-mes').value);
+    const datos = await api(`/api/admin/facturacion?anio=${anio}&mes=${mes}`);
+    const cuerpo = document.querySelector('#tabla-recibos tbody');
+    const pie = document.querySelector('#tabla-recibos tfoot');
+    cuerpo.innerHTML = '';
+    pie.innerHTML = '';
+
+    if (!datos.length) {
+      cuerpo.innerHTML = '<tr><td colspan="9" style="color:var(--gris);">Sin recibos generados para este mes todavía.</td></tr>';
+      return;
+    }
+
+    let total = 0;
+    for (const r of datos) {
+      total += Number(r.total);
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${r.empresas?.nombre ?? '—'} <span style="font-family:monospace; font-size:0.75rem; color:var(--gris);">(${r.empresas?.codigo_cliente ?? '—'})</span></td>
+        <td>${r.paquete_nombre ?? '—'}</td>
+        <td>${r.metodo_facturacion === 'lead' ? 'Por lead' : 'Suscripción'}</td>
+        <td>${r.leads_contados}</td>
+        <td>${r.leads_incluidos_mes ?? '—'}</td>
+        <td>${r.leads_exceso}</td>
+        <td>${r.incluye_implementacion ? formatoEuros(r.coste_implementacion) : '—'}</td>
+        <td><strong>${formatoEuros(r.total)}</strong></td>
+        <td>${new Date(r.generado_en).toLocaleString('es-ES')}</td>
+      `;
+      cuerpo.appendChild(fila);
+    }
+    pie.innerHTML = `<tr><td colspan="7"></td><td colspan="2"><strong>Total: ${formatoEuros(total)}</strong></td></tr>`;
+  }
+
+  async function generarRecibosMes() {
+    const anio = Number(document.getElementById('filtro-factura-anio').value);
+    const mes = Number(document.getElementById('filtro-factura-mes').value);
+    const mensaje = document.getElementById('mensaje-facturacion');
+    mensaje.textContent = 'Generando recibos...';
+    const resultado = await api('/api/admin/facturacion/generar', { method: 'POST', body: JSON.stringify({ anio, mes }) });
+    if (resultado?.error) {
+      mensaje.textContent = 'Error: ' + JSON.stringify(resultado.error);
+      return;
+    }
+    mensaje.textContent = `✅ ${resultado.length} recibo(s) generado(s) para ${NOMBRES_MES[mes - 1]} ${anio}.`;
+    cargarRecibos();
   }
 
   // --- Vista: Usuarios / Roles ---

@@ -70,6 +70,7 @@ const esquemaEmpresa = z.object({
 
   telefono_comunicacion: z.string().max(20).optional().or(z.literal("")),
   facturacion_anual: z.number().optional().nullable(),
+  cuenta_facturacion: z.string().max(50).optional().or(z.literal("")),
 });
 
 function construirDatosEmpresa(datos: z.infer<typeof esquemaEmpresa>) {
