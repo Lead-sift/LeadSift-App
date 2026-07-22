@@ -3,6 +3,7 @@ import { clasificarIntencion, type UsoTokens } from "./clasificador.js";
 import { cualificarLead } from "./cualificador.js";
 import { generarRespuestaInformativa } from "./responderInformativa.js";
 import { notificarComercial, requiereNotificacion } from "./notificarComercial.js";
+import { iniciarActividad, actualizarEtapaActividad, finalizarActividad } from "./actividadAgentes.js";
 
 export interface MensajeEntrante {
   empresaId: string;
@@ -42,6 +43,19 @@ async function registrarConsumo(empresaId: string, mensajeId: string | null, uso
 export async function procesarMensajeEntrante(
   mensaje: MensajeEntrante,
   promptSistema: string
+) {
+  const idActividad = iniciarActividad(mensaje.empresaId, mensaje.canal);
+  try {
+    return await procesarMensajeEntranteInterno(mensaje, promptSistema, idActividad);
+  } finally {
+    finalizarActividad(idActividad);
+  }
+}
+
+async function procesarMensajeEntranteInterno(
+  mensaje: MensajeEntrante,
+  promptSistema: string,
+  idActividad: string
 ) {
   const { data: conversacion, error: errorConversacion } = await supabase
     .from("conversaciones")
@@ -93,6 +107,7 @@ export async function procesarMensajeEntrante(
   }
 
   if (intencion === "informativa") {
+    actualizarEtapaActividad(idActividad, "respondiendo");
     const { respuesta, uso } = await generarRespuestaInformativa(promptSistema, mensaje.texto);
     const { data: mensajeIa } = await supabase
       .from("mensajes")
@@ -110,6 +125,7 @@ export async function procesarMensajeEntrante(
     return { conversacionId: conversacion.id, intencion, lead: null, respuesta };
   }
 
+  actualizarEtapaActividad(idActividad, "cualificando");
   const { ficha, uso: usoCualificacion } = await cualificarLead(promptSistema, mensaje.texto);
 
   const { data: lead, error: errorLead } = await supabase
@@ -145,6 +161,7 @@ export async function procesarMensajeEntrante(
   await registrarConsumo(mensaje.empresaId, mensajeIa?.id ?? null, usoCualificacion);
 
   if (requiereNotificacion(lead, ficha.requiereEscaladoHumano)) {
+    actualizarEtapaActividad(idActividad, "notificando");
     try {
       await notificarComercial(
         mensaje.empresaId,

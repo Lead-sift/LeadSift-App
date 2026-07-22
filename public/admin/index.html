@@ -209,7 +209,13 @@
     extracciones: renderExtracciones,
   };
 
+  let intervaloActividad = null;
+
   function irA(vista) {
+    if (intervaloActividad) {
+      clearInterval(intervaloActividad);
+      intervaloActividad = null;
+    }
     document.querySelectorAll('.enlace-nav').forEach((a) => a.classList.toggle('activo', a.dataset.vista === vista));
     window.location.hash = vista;
     vistas[vista]();
@@ -221,7 +227,10 @@
     contenido.innerHTML = `
       <h2>Consultas Generales</h2>
 
-      <h3>Buscar cliente o lead</h3>
+      <h3>Actividad de los agentes en tiempo real</h3>
+      <div id="panel-actividad-agentes"><p>Cargando...</p></div>
+
+      <h3 style="margin-top:2rem;">Buscar cliente o lead</h3>
       <p style="color:var(--gris); font-size:0.85rem; margin-top:-0.5rem;">Busca por cualquier campo: nombre, NIF/CIF, sector, contacto, teléfono, email, necesidad...</p>
       <div class="filtros">
         <input id="busqueda-general" placeholder="Buscar cliente o lead..." style="max-width:400px;" />
@@ -244,6 +253,49 @@
       if (e.key === 'Enter') buscarGeneral();
     });
     cargarConsultasGenerales();
+
+    cargarActividadAgentes();
+    intervaloActividad = setInterval(cargarActividadAgentes, 4000);
+  }
+
+  const ETIQUETAS_ETAPA = {
+    clasificando: 'Clasificando intención',
+    cualificando: 'Cualificando lead',
+    respondiendo: 'Generando respuesta',
+    notificando: 'Notificando al comercial',
+  };
+
+  async function cargarActividadAgentes() {
+    const datos = await api('/api/admin/actividad');
+    const panel = document.getElementById('panel-actividad-agentes');
+    if (!panel || !datos) return;
+
+    const filasEnCurso = datos.enCurso.length
+      ? datos.enCurso
+          .map(
+            (a) => `
+            <tr>
+              <td>${a.empresaNombre}</td>
+              <td>${a.canal}</td>
+              <td>${ETIQUETAS_ETAPA[a.etapa] ?? a.etapa}</td>
+              <td>${a.segundos}s</td>
+            </tr>`
+          )
+          .join('')
+      : '<tr><td colspan="4" style="color:var(--gris);">Ningún agente procesando consultas ahora mismo.</td></tr>';
+
+    panel.innerHTML = `
+      <div class="filtros" style="margin-bottom:0.75rem;">
+        <span class="badge badge-en_curso">En curso ahora: ${datos.enCurso.length}</span>
+        <span class="badge badge-templado">Últimos 5 min: ${datos.ultimos5min}</span>
+        <span class="badge badge-confirmado">Última hora: ${datos.ultimaHora}</span>
+        <span class="badge badge-frio">Últimas 24h: ${datos.ultimas24h}</span>
+      </div>
+      <table>
+        <thead><tr><th>Cliente</th><th>Canal</th><th>Etapa</th><th>Duración</th></tr></thead>
+        <tbody>${filasEnCurso}</tbody>
+      </table>
+    `;
   }
 
   async function buscarGeneral() {
