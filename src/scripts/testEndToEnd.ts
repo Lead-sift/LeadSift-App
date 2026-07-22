@@ -11,8 +11,6 @@ async function main() {
     );
   }
 
-  const promptSistema = await cargarPromptSistemaActivo(empresaId);
-
   const mensajesDePrueba = [
     {
       empresaId,
@@ -32,6 +30,7 @@ async function main() {
   for (const mensaje of mensajesDePrueba) {
     console.log("\n--- Procesando mensaje ---");
     console.log(mensaje.texto);
+    const promptSistema = await cargarPromptSistemaActivo(empresaId, mensaje.texto);
     const resultado = await procesarMensajeEntrante(mensaje, promptSistema);
     console.log("Intención:", resultado.intencion);
     console.log("Resultado:", JSON.stringify(resultado, null, 2));

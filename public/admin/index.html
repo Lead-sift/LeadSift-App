@@ -1100,6 +1100,7 @@
         <h3 style="margin-top:2rem;">Documentos de referencia</h3>
         <p style="font-size:0.85rem; color:var(--gris); margin-top:-0.5rem;">
           Catálogo, FAQ, horarios, política de precios... se añaden automáticamente al prompt en cada consulta, sin tener que reescribirlo.
+          El catálogo y el listado de clientes son voluminosos: en vez de inyectarse enteros, se buscan y recuperan solo los fragmentos relevantes para cada consulta (RAG).
         </p>
         <div id="lista-documentos-servicios"></div>
         <div class="form-grid" style="max-width:600px;">
@@ -1107,6 +1108,7 @@
             <label for="doc-tipo">Tipo de documento</label>
             <select id="doc-tipo">
               <option value="catalogo">Catálogo</option>
+              <option value="listado_clientes">Listado de clientes existentes</option>
               <option value="faq">FAQ</option>
               <option value="politica_precios">Política de precios</option>
               <option value="horarios">Horarios</option>

@@ -19,7 +19,7 @@ ingestaRouter.post("/", async (req, res) => {
   }
 
   try {
-    const promptSistema = await cargarPromptSistemaActivo(parseo.data.empresaId);
+    const promptSistema = await cargarPromptSistemaActivo(parseo.data.empresaId, parseo.data.texto);
     const resultado = await procesarMensajeEntrante(parseo.data, promptSistema);
     res.json(resultado);
   } catch (error) {

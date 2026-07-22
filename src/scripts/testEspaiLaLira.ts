@@ -9,8 +9,6 @@ async function main() {
     throw new Error("Define EMPRESA_ID con el id devuelto por seedEspaiLaLira.ts");
   }
 
-  const promptSistema = await cargarPromptSistemaActivo(empresaId);
-
   const mensajesDePrueba = [
     {
       empresaId,
@@ -43,6 +41,7 @@ async function main() {
   for (const mensaje of mensajesDePrueba) {
     console.log("\n--- Procesando mensaje ---");
     console.log(mensaje.texto);
+    const promptSistema = await cargarPromptSistemaActivo(empresaId, mensaje.texto);
     const resultado = await procesarMensajeEntrante(mensaje, promptSistema);
     console.log("Intención:", resultado.intencion);
     console.log("Resultado:", JSON.stringify(resultado, null, 2));

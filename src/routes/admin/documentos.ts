@@ -3,6 +3,7 @@ import multer from "multer";
 import { z } from "zod";
 import { supabase } from "../../services/supabaseClient.js";
 import { extraerDocumento, subirImagenesCatalogo } from "../../services/extraerDocumento.js";
+import { regenerarFragmentos } from "../../services/ragChunking.js";
 
 export const documentosAdminRouter = Router();
 
@@ -42,6 +43,8 @@ documentosAdminRouter.post("/:empresaId/extraer", subidaArchivo.single("archivo"
       .single();
 
     if (errorDocumento) throw new Error(errorDocumento.message);
+
+    await regenerarFragmentos(req.params.empresaId, documento.id, "catalogo", documento.contenido);
 
     const imagenesGuardadas = await subirImagenesCatalogo(
       req.params.empresaId,
@@ -101,6 +104,9 @@ documentosAdminRouter.post("/:empresaId", async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: error.message });
+
+  await regenerarFragmentos(req.params.empresaId, data.id, parseo.data.tipo, parseo.data.contenido);
+
   res.status(201).json(data);
 });
 
