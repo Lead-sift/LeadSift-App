@@ -89,6 +89,17 @@
   .leads-layout.detalle-abierto .leads-tabla-col .col-extra { display: none; }
   .leads-layout.detalle-abierto .leads-detalle-col { flex: 1 1 auto; width: auto; overflow: visible; }
   .leads-detalle-col .panel-detalle-lead { margin-top: 0; position: sticky; top: 1rem; }
+
+  .paquetes-comparativa { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; align-items: stretch; }
+  .paquete-columna { border: 2px solid var(--borde); border-radius: 10px; padding: 1.1rem; background: white; display: flex; flex-direction: column; }
+  .paquete-columna.seleccionado { border-color: var(--arcilla); box-shadow: 0 0 0 2px rgba(181,74,44,0.15); }
+  .paquete-columna h4 { margin: 0 0 0.25rem; font-size: 1.05rem; }
+  .paquete-precio { font-size: 1.3rem; font-weight: 700; color: var(--arcilla-oscuro); margin: 0.4rem 0; }
+  .paquete-precio small { font-size: 0.7rem; font-weight: 500; color: var(--gris); display: block; }
+  .paquete-servicios { list-style: none; padding: 0; margin: 0.75rem 0; font-size: 0.85rem; flex: 1; }
+  .paquete-servicios li { padding: 0.25rem 0; }
+  .paquete-servicios li.no-incluido { color: var(--gris); text-decoration: line-through; }
+  .etiqueta-paquete-actual { background: var(--arcilla); color: white; font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 10px; display: inline-block; margin-bottom: 0.5rem; }
 </style>
 </head>
 <body>
@@ -111,6 +122,7 @@
       <a class="enlace-nav" data-vista="clientes" onclick="irA('clientes')">Listado de clientes</a>
       <a class="enlace-nav" data-vista="servicios" onclick="irA('servicios')">Servicios</a>
       <a class="enlace-nav" data-vista="nuevo-cliente" onclick="irA('nuevo-cliente')">Nuevo cliente</a>
+      <a class="enlace-nav" data-vista="productos" onclick="irA('productos')">Productos</a>
 
       <div class="titulo-grupo">Consultas</div>
       <a class="enlace-nav" data-vista="consultas" onclick="irA('consultas')">Consultas Generales</a>
@@ -189,6 +201,7 @@
     'nuevo-cliente': renderNuevoCliente,
     servicios: renderServicios,
     leads: renderLeads,
+    productos: renderProductos,
     usuarios: renderUsuarios,
     dashboard: renderDashboard,
     extracciones: renderExtracciones,
@@ -756,6 +769,9 @@
         </table>
         <p id="mensaje-servicios" style="margin-top:0.75rem; font-size:0.9rem;"></p>
 
+        <h3 style="margin-top:2rem;">Paquete contratado</h3>
+        <div id="paquete-comparativa-servicios"><p>Cargando paquetes...</p></div>
+
         <h3 style="margin-top:2rem;">Prompt del proyecto</h3>
         <p style="font-size:0.85rem; color:var(--gris); margin-top:-0.5rem;">
           Se aplica de inmediato a la siguiente consulta de este cliente (sin sandbox intermedio). Versión actual: <span id="servicios-prompt-version">—</span>.
@@ -805,6 +821,7 @@
     cargarPromptServicios(empresa.id);
     cargarDocumentosServicios(empresa.id);
     cargarImagenesCatalogo(empresa.id);
+    cargarPaqueteServicios(empresa.id);
 
     document.getElementById('doc-archivo').addEventListener('change', async (e) => {
       const archivo = e.target.files[0];
@@ -817,6 +834,122 @@
         previa.textContent = 'No se pudo leer este archivo como texto.';
       }
     });
+  }
+
+  // --- Paquete contratado (comparativa dentro de Servicios) ---
+  const SERVICIOS_PAQUETE = [
+    { clave: 'formulario', etiqueta: 'Canal Formulario' },
+    { clave: 'whatsapp', etiqueta: 'Canal WhatsApp' },
+    { clave: 'multicanal', etiqueta: 'Multi-canal simultáneo' },
+    { clave: 'catalogo_fotos', etiqueta: 'Catálogo de productos con fotos' },
+    { clave: 'resumen_ia', etiqueta: 'Resumen de leads con IA' },
+    { clave: 'historico_prompt', etiqueta: 'Histórico de versiones de prompt' },
+    { clave: 'soporte_prioritario', etiqueta: 'Soporte prioritario' },
+  ];
+
+  function formatoEuros(valor) {
+    if (valor === null || valor === undefined || valor === '') return '—';
+    return Number(valor).toLocaleString('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 });
+  }
+
+  function bloquePrecioPaquete(p) {
+    if (p.metodo_facturacion === 'lead') {
+      return `<div class="paquete-precio">${formatoEuros(p.precio_por_lead)}<small>por lead cualificado</small></div>`;
+    }
+    return `
+      <div class="paquete-precio">${formatoEuros(p.coste_mensual)}<small>al mes · ${p.leads_incluidos_mes ?? 0} leads incluidos</small></div>
+      <p style="font-size:0.78rem; color:var(--gris); margin:-0.4rem 0 0.4rem;">Lead adicional: ${formatoEuros(p.precio_lead_adicional)}</p>
+    `;
+  }
+
+  async function cargarPaqueteServicios(empresaId) {
+    const contenedor = document.getElementById('paquete-comparativa-servicios');
+    const [paquetes, asignado] = await Promise.all([
+      api('/api/admin/paquetes'),
+      api(`/api/admin/paquetes/asignado/${empresaId}`),
+    ]);
+
+    if (!paquetes.length) {
+      contenedor.innerHTML = '<p style="color:var(--gris);">Todavía no hay paquetes configurados. Créalos en Producción → Productos.</p>';
+      return;
+    }
+
+    const paqueteIdActual = asignado?.paqueteId ?? null;
+
+    contenedor.innerHTML = `
+      <div class="paquetes-comparativa">
+        ${paquetes
+          .map((p) => {
+            const esActual = p.id === paqueteIdActual;
+            const servicios = SERVICIOS_PAQUETE.map(
+              (s) => `<li class="${p.servicios_incluidos?.[s.clave] ? '' : 'no-incluido'}">${p.servicios_incluidos?.[s.clave] ? '✓' : '✗'} ${s.etiqueta}</li>`
+            ).join('');
+            return `
+              <div class="paquete-columna ${esActual ? 'seleccionado' : ''}">
+                ${esActual ? '<span class="etiqueta-paquete-actual">Paquete actual</span>' : ''}
+                <h4>${p.nombre}</h4>
+                <p style="font-size:0.82rem; color:var(--gris); margin:0;">${p.descripcion ?? ''}</p>
+                ${bloquePrecioPaquete(p)}
+                <p style="font-size:0.78rem; color:var(--gris); margin:0;">Implementación: ${formatoEuros(p.coste_implementacion)}</p>
+                <ul class="paquete-servicios">${servicios}</ul>
+                ${esActual
+                  ? `<button class="secundario" onclick='mostrarOverridePaquete("${empresaId}", ${JSON.stringify(p).replace(/'/g, '&apos;')}, ${JSON.stringify(asignado.override ?? {}).replace(/'/g, '&apos;')})'>Personalizar precios para este cliente</button>`
+                  : `<button class="principal" onclick="asignarPaqueteServicios('${empresaId}', '${p.id}')">Seleccionar este paquete</button>`}
+              </div>
+            `;
+          })
+          .join('')}
+      </div>
+      <div id="override-paquete-contenedor"></div>
+      <p id="mensaje-paquete-servicios" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+    `;
+  }
+
+  async function asignarPaqueteServicios(empresaId, paqueteId) {
+    await api(`/api/admin/paquetes/asignado/${empresaId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ paqueteId, override: {} }),
+    });
+    cargarPaqueteServicios(empresaId);
+  }
+
+  function mostrarOverridePaquete(empresaId, paquete, override) {
+    const CAMPOS = paquete.metodo_facturacion === 'lead'
+      ? [{ clave: 'precio_por_lead', etiqueta: 'Precio por lead (€)' }]
+      : [
+          { clave: 'coste_mensual', etiqueta: 'Coste mensual (€)' },
+          { clave: 'leads_incluidos_mes', etiqueta: 'Leads incluidos/mes' },
+          { clave: 'precio_lead_adicional', etiqueta: 'Precio lead adicional (€)' },
+        ];
+    CAMPOS.unshift({ clave: 'coste_implementacion', etiqueta: 'Coste de implementación (€)' });
+
+    const contenedor = document.getElementById('override-paquete-contenedor');
+    contenedor.innerHTML = `
+      <div class="panel-prompt" style="margin-top:1rem;">
+        <h4 style="margin-top:0;">Precios personalizados para este cliente</h4>
+        <p style="font-size:0.8rem; color:var(--gris); margin-top:-0.5rem;">Deja un campo vacío para usar el valor general del paquete "${paquete.nombre}".</p>
+        <div class="form-grid">
+          ${CAMPOS.map(
+            (c) => `<div><label>${c.etiqueta}</label><input id="override-${c.clave}" type="number" step="0.01" value="${override[c.clave] ?? ''}" placeholder="${paquete[c.clave] ?? ''}" /></div>`
+          ).join('')}
+        </div>
+        <button class="principal" style="margin-top:0.75rem;" onclick='guardarOverridePaquete("${empresaId}", "${paquete.id}", ${JSON.stringify(CAMPOS.map((c) => c.clave))})'>Guardar precios personalizados</button>
+      </div>
+    `;
+  }
+
+  async function guardarOverridePaquete(empresaId, paqueteId, claves) {
+    const override = {};
+    for (const clave of claves) {
+      const valor = document.getElementById(`override-${clave}`).value;
+      override[clave] = valor === '' ? null : Number(valor);
+    }
+    await api(`/api/admin/paquetes/asignado/${empresaId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ paqueteId, override }),
+    });
+    document.getElementById('mensaje-paquete-servicios').textContent = '✅ Precios personalizados guardados.';
+    cargarPaqueteServicios(empresaId);
   }
 
   async function cargarPromptServicios(empresaId) {
@@ -1265,6 +1398,179 @@
     }
     abrirDetalleLead(conversacionId);
     actualizarTransferidoEnTabla(conversacionId, true);
+  }
+
+  // --- Vista: Productos (paquetes de servicio) ---
+  async function renderProductos() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Productos</h2>
+      <p style="color:var(--gris); font-size:0.9rem; margin-top:-0.5rem;">
+        Paquetes estándar (Básico, Profesional, Premium...) que luego se asignan a cada cliente desde Servicios,
+        con la posibilidad de personalizar el precio solo para ese cliente.
+      </p>
+      <button class="principal" onclick="abrirFormularioPaquete(null)">+ Nuevo paquete</button>
+      <table id="tabla-paquetes" style="margin-top:1rem;">
+        <thead><tr><th>Nombre</th><th>Facturación</th><th>Precio</th><th>Implementación</th><th>Acciones</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div id="panel-paquete"></div>
+    `;
+    cargarPaquetes();
+  }
+
+  let paquetesCache = [];
+
+  async function cargarPaquetes() {
+    const datos = await api('/api/admin/paquetes');
+    paquetesCache = datos;
+    const cuerpo = document.querySelector('#tabla-paquetes tbody');
+    cuerpo.innerHTML = '';
+    for (const p of datos) {
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td>${p.nombre}</td>
+        <td>${p.metodo_facturacion === 'lead' ? 'Precio por lead' : 'Suscripción mensual'}</td>
+        <td>${p.metodo_facturacion === 'lead' ? formatoEuros(p.precio_por_lead) + '/lead' : formatoEuros(p.coste_mensual) + '/mes'}</td>
+        <td>${formatoEuros(p.coste_implementacion)}</td>
+        <td>
+          <button class="secundario" onclick='abrirFormularioPaquete(${JSON.stringify(p).replace(/'/g, '&apos;')})'>Editar</button>
+          <button class="secundario" onclick="eliminarPaquete('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">Eliminar</button>
+        </td>
+      `;
+      cuerpo.appendChild(fila);
+    }
+  }
+
+  function abrirFormularioPaquete(paquete) {
+    const esNuevo = !paquete;
+    const servicios = paquete?.servicios_incluidos ?? {};
+    const metodo = paquete?.metodo_facturacion ?? 'suscripcion';
+
+    const panel = document.getElementById('panel-paquete');
+    panel.innerHTML = `
+      <div class="panel-prompt" style="margin-top:1.5rem; max-width:700px;">
+        <h3>${esNuevo ? 'Nuevo paquete' : `Editar paquete — ${paquete.nombre}`}</h3>
+        <div class="form-grid">
+          <div>
+            <label for="paquete-nombre">Nombre</label>
+            <input id="paquete-nombre" placeholder="Básico / Profesional / Premium" value="${paquete?.nombre ?? ''}" />
+          </div>
+          <div>
+            <label for="paquete-orden">Orden (columna, de izq. a der.)</label>
+            <input id="paquete-orden" type="number" value="${paquete?.orden ?? 0}" />
+          </div>
+        </div>
+        <label for="paquete-descripcion" style="display:block; font-size:0.8rem; font-weight:600; margin:0.75rem 0 0.25rem; color:var(--gris);">Descripción breve</label>
+        <input id="paquete-descripcion" value="${paquete?.descripcion ?? ''}" placeholder="Para quién es este paquete" />
+
+        <h4 style="margin-top:1.25rem;">Coste e implementación</h4>
+        <div class="form-grid">
+          <div>
+            <label for="paquete-implementacion">Coste de implementación y conexión (€)</label>
+            <input id="paquete-implementacion" type="number" step="0.01" min="0" value="${paquete?.coste_implementacion ?? 0}" />
+          </div>
+          <div>
+            <label for="paquete-metodo">Método de facturación</label>
+            <select id="paquete-metodo" onchange="actualizarCamposFacturacionPaquete()">
+              <option value="suscripcion" ${metodo === 'suscripcion' ? 'selected' : ''}>Suscripción mensual</option>
+              <option value="lead" ${metodo === 'lead' ? 'selected' : ''}>Precio por lead</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="campos-facturacion-lead" class="form-grid" style="${metodo === 'lead' ? '' : 'display:none;'}">
+          <div>
+            <label for="paquete-precio-lead">Precio por lead (€)</label>
+            <input id="paquete-precio-lead" type="number" step="0.01" min="0" value="${paquete?.precio_por_lead ?? ''}" />
+          </div>
+        </div>
+
+        <div id="campos-facturacion-suscripcion" class="form-grid" style="${metodo === 'suscripcion' ? '' : 'display:none;'}">
+          <div>
+            <label for="paquete-leads-incluidos">Leads incluidos al mes</label>
+            <input id="paquete-leads-incluidos" type="number" min="0" value="${paquete?.leads_incluidos_mes ?? ''}" />
+          </div>
+          <div>
+            <label for="paquete-coste-mensual">Coste mensual (€)</label>
+            <input id="paquete-coste-mensual" type="number" step="0.01" min="0" value="${paquete?.coste_mensual ?? ''}" />
+          </div>
+          <div>
+            <label for="paquete-lead-adicional">Precio por lead adicional (€)</label>
+            <input id="paquete-lead-adicional" type="number" step="0.01" min="0" value="${paquete?.precio_lead_adicional ?? ''}" />
+          </div>
+        </div>
+
+        <h4 style="margin-top:1.25rem;">Servicios incluidos</h4>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:0.4rem;">
+          ${SERVICIOS_PAQUETE.map(
+            (s) => `<label style="display:flex; align-items:center; gap:0.4rem; font-weight:normal; font-size:0.88rem;">
+              <input type="checkbox" id="servicio-${s.clave}" style="width:auto;" ${servicios[s.clave] ? 'checked' : ''} /> ${s.etiqueta}
+            </label>`
+          ).join('')}
+        </div>
+
+        <div style="margin-top:1.25rem; display:flex; gap:0.5rem; align-items:center;">
+          <button class="principal" onclick="guardarPaquete(${esNuevo ? 'null' : `'${paquete.id}'`})">Guardar</button>
+          <button class="secundario" onclick="document.getElementById('panel-paquete').innerHTML=''">Cancelar</button>
+        </div>
+        <p id="mensaje-paquete" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+      </div>
+    `;
+  }
+
+  function actualizarCamposFacturacionPaquete() {
+    const metodo = document.getElementById('paquete-metodo').value;
+    document.getElementById('campos-facturacion-lead').style.display = metodo === 'lead' ? '' : 'none';
+    document.getElementById('campos-facturacion-suscripcion').style.display = metodo === 'suscripcion' ? '' : 'none';
+  }
+
+  async function guardarPaquete(paqueteId) {
+    const metodo = document.getElementById('paquete-metodo').value;
+    const mensaje = document.getElementById('mensaje-paquete');
+    const nombre = document.getElementById('paquete-nombre').value.trim();
+    if (!nombre) { mensaje.textContent = 'El nombre es obligatorio'; return; }
+
+    const servicios_incluidos = {};
+    for (const s of SERVICIOS_PAQUETE) {
+      servicios_incluidos[s.clave] = document.getElementById(`servicio-${s.clave}`).checked;
+    }
+
+    const numOrNull = (id) => {
+      const v = document.getElementById(id)?.value;
+      return v === '' || v === undefined ? null : Number(v);
+    };
+
+    const cuerpo = {
+      nombre,
+      descripcion: document.getElementById('paquete-descripcion').value.trim(),
+      orden: Number(document.getElementById('paquete-orden').value) || 0,
+      coste_implementacion: Number(document.getElementById('paquete-implementacion').value) || 0,
+      metodo_facturacion: metodo,
+      precio_por_lead: metodo === 'lead' ? numOrNull('paquete-precio-lead') : null,
+      leads_incluidos_mes: metodo === 'suscripcion' ? numOrNull('paquete-leads-incluidos') : null,
+      coste_mensual: metodo === 'suscripcion' ? numOrNull('paquete-coste-mensual') : null,
+      precio_lead_adicional: metodo === 'suscripcion' ? numOrNull('paquete-lead-adicional') : null,
+      servicios_incluidos,
+    };
+
+    const resultado = paqueteId
+      ? await api(`/api/admin/paquetes/${paqueteId}`, { method: 'PUT', body: JSON.stringify(cuerpo) })
+      : await api('/api/admin/paquetes', { method: 'POST', body: JSON.stringify(cuerpo) });
+
+    if (!resultado || resultado.error) {
+      mensaje.textContent = 'Error: ' + JSON.stringify(resultado?.error ?? 'desconocido');
+      return;
+    }
+
+    await cargarPaquetes();
+    document.getElementById('panel-paquete').innerHTML = '';
+  }
+
+  async function eliminarPaquete(paqueteId, nombre) {
+    if (!confirm(`¿Eliminar el paquete "${nombre}"? Los clientes que ya lo tengan asignado mantienen sus precios.`)) return;
+    await api(`/api/admin/paquetes/${paqueteId}`, { method: 'DELETE' });
+    cargarPaquetes();
   }
 
   // --- Vista: Usuarios / Roles ---
