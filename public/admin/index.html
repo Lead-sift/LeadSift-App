@@ -81,6 +81,14 @@
   .msg-cliente { margin-bottom: 0.6rem; }
   .msg-cliente strong { color: var(--arcilla-oscuro); }
   .msg-ia strong { color: var(--ciruela); }
+
+  .leads-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+  .leads-tabla-col { flex: 1; min-width: 0; }
+  .leads-detalle-col { flex: 0 0 0; width: 0; overflow: hidden; }
+  .leads-layout.detalle-abierto .leads-tabla-col { flex: 0 0 auto; width: auto; }
+  .leads-layout.detalle-abierto .leads-tabla-col .col-extra { display: none; }
+  .leads-layout.detalle-abierto .leads-detalle-col { flex: 1 1 auto; width: auto; overflow: visible; }
+  .leads-detalle-col .panel-detalle-lead { margin-top: 0; position: sticky; top: 1rem; }
 </style>
 </head>
 <body>
@@ -865,6 +873,8 @@
   }
 
   async function renderLeads() {
+    const empresas = await api('/api/admin/empresas');
+    const opcionesCliente = empresas.map((e) => `<option value="${e.id}">${e.nombre}</option>`).join('');
     const contenido = document.getElementById('contenido');
     contenido.innerHTML = `
       <h2>Leads</h2>
@@ -881,15 +891,32 @@
           <option value="formulario">Formulario</option>
           <option value="email">Email</option>
         </select>
+        <select id="filtro-lead-cliente">
+          <option value="">Todos los clientes</option>
+          ${opcionesCliente}
+        </select>
         <button class="secundario" onclick="cargarLeads()">Filtrar</button>
       </div>
-      <table id="tabla-leads">
-        <thead>
-          <tr><th>ID</th><th>Estado</th><th>Cliente</th><th>Resultado</th><th>Canal</th><th>Temperatura</th><th>Fecha</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-      <div id="panel-detalle-lead"></div>
+      <div class="leads-layout" id="leads-layout">
+        <div class="leads-tabla-col">
+          <table id="tabla-leads">
+            <thead>
+              <tr>
+                <th class="col-id">ID</th>
+                <th class="col-extra">Estado</th>
+                <th class="col-extra">Cliente</th>
+                <th class="col-extra">Resultado</th>
+                <th class="col-extra">Canal</th>
+                <th class="col-extra">Temperatura</th>
+                <th class="col-extra">Transferido</th>
+                <th class="col-extra">Fecha</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="leads-detalle-col" id="panel-detalle-lead"></div>
+      </div>
     `;
     cargarLeads();
   }
@@ -901,30 +928,42 @@
     leadsCache = datos;
     const estadoFiltro = document.getElementById('filtro-lead-estado').value;
     const canalFiltro = document.getElementById('filtro-lead-canal').value;
+    const clienteFiltro = document.getElementById('filtro-lead-cliente').value;
 
     const cuerpo = document.querySelector('#tabla-leads tbody');
     cuerpo.innerHTML = '';
     for (const l of datos) {
       if (estadoFiltro && l.estado !== estadoFiltro) continue;
       if (canalFiltro && l.canal !== canalFiltro) continue;
+      if (clienteFiltro && l.empresaId !== clienteFiltro) continue;
       const temperatura = textoTemperatura(l.temperatura);
       const fila = document.createElement('tr');
       fila.className = 'fila-clic';
+      fila.dataset.leadId = l.id;
       fila.onclick = () => abrirDetalleLead(l.id);
       fila.innerHTML = `
-        <td>${l.id.slice(0, 8)}</td>
-        <td><span class="badge badge-${l.estado}">${textoEstado(l.estado)}</span></td>
-        <td>${l.cliente}</td>
-        <td>${l.resultado ? `<span class="badge badge-${l.resultado}">${textoResultado(l.resultado)}</span>` : '—'}</td>
-        <td>${l.canal}</td>
-        <td><span class="badge badge-${temperatura}">${temperatura}</span></td>
-        <td>${new Date(l.createdAt).toLocaleString('es-ES')}</td>
+        <td class="col-id">${l.id.slice(0, 8)}</td>
+        <td class="col-extra"><span class="badge badge-${l.estado}">${textoEstado(l.estado)}</span></td>
+        <td class="col-extra">${l.cliente}</td>
+        <td class="col-extra">${l.resultado ? `<span class="badge badge-${l.resultado}">${textoResultado(l.resultado)}</span>` : '—'}</td>
+        <td class="col-extra">${l.canal}</td>
+        <td class="col-extra"><span class="badge badge-${temperatura}">${temperatura}</span></td>
+        <td class="col-extra"><input type="checkbox" disabled ${l.transferido ? 'checked' : ''} style="width:auto;" /></td>
+        <td class="col-extra">${new Date(l.createdAt).toLocaleString('es-ES')}</td>
       `;
       cuerpo.appendChild(fila);
     }
   }
 
+  function actualizarTransferidoEnTabla(conversacionId, transferido) {
+    const fila = document.querySelector(`#tabla-leads tr[data-lead-id="${conversacionId}"]`);
+    if (!fila) return;
+    const checkbox = fila.querySelector('td.col-extra:nth-child(7) input');
+    if (checkbox) checkbox.checked = transferido;
+  }
+
   async function abrirDetalleLead(conversacionId) {
+    document.getElementById('leads-layout').classList.add('detalle-abierto');
     const panel = document.getElementById('panel-detalle-lead');
     panel.innerHTML = '<p>Cargando...</p>';
     const l = await api(`/api/admin/leads/${conversacionId}`);
@@ -940,8 +979,10 @@
 
     panel.innerHTML = `
       <div class="panel-detalle-lead">
+        <button class="secundario" onclick="cerrarDetalleLead()">← Volver a la tabla</button>
         <h3>Detalle del lead</h3>
         <div class="lead-campos">
+          <div class="lead-campo"><strong>ID de Lead</strong>${l.id}</div>
           <div class="lead-campo"><strong>Estado</strong><span class="badge badge-${l.estado}">${textoEstado(l.estado)}</span></div>
           <div class="lead-campo"><strong>Temperatura</strong><span class="badge badge-${temperatura}">${temperatura}</span></div>
           <div class="lead-campo"><strong>Cliente (empresa contratante)</strong>${l.cliente}</div>
@@ -987,15 +1028,15 @@
         <button class="principal" style="margin-top:0.75rem;" onclick="guardarResultadoLead('${conversacionId}')">Guardar</button>
 
         <h4>Transferencia a la empresa cliente</h4>
-        <label style="display:flex; align-items:center; gap:0.5rem; font-weight:normal;">
-          <input type="checkbox" id="lead-transferido" style="width:auto;" ${l.transferido ? 'checked' : ''} onchange="marcarTransferido('${conversacionId}', this.checked)" />
-          Transferido a la empresa cliente
-        </label>
-        ${l.lead ? `<button class="secundario" style="margin-top:0.5rem;" onclick="notificarClienteLead('${conversacionId}')">Enviar notificación ahora (email)</button>` : '<p style="color:var(--gris); font-size:0.85rem;">Esta conversación no generó una ficha de lead, no hay nada que transferir.</p>'}
-
-        <div style="margin-top:1rem;"><button class="secundario" onclick="document.getElementById('panel-detalle-lead').innerHTML=''">Cerrar</button></div>
+        <p style="font-size:0.85rem; color:var(--gris);">Transferido: <strong>${l.transferido ? 'Sí' : 'No'}</strong>${l.transferido_en ? ` (${new Date(l.transferido_en).toLocaleString('es-ES')})` : ''}</p>
+        ${l.lead ? `<button class="secundario" onclick="notificarClienteLead('${conversacionId}')">Enviar notificación ahora (email)</button>` : '<p style="color:var(--gris); font-size:0.85rem;">Esta conversación no generó una ficha de lead, no hay nada que transferir.</p>'}
       </div>
     `;
+  }
+
+  function cerrarDetalleLead() {
+    document.getElementById('leads-layout').classList.remove('detalle-abierto');
+    document.getElementById('panel-detalle-lead').innerHTML = '';
   }
 
   const MOTIVOS_DESESTIMACION_FRONT = [
@@ -1027,11 +1068,6 @@
     cargarLeads();
   }
 
-  async function marcarTransferido(conversacionId, transferido) {
-    await api(`/api/admin/leads/${conversacionId}`, { method: 'PUT', body: JSON.stringify({ transferido }) });
-    cargarLeads();
-  }
-
   async function notificarClienteLead(conversacionId) {
     const datos = await api(`/api/admin/leads/${conversacionId}/notificar`, { method: 'POST' });
     if (datos.error) {
@@ -1039,7 +1075,7 @@
       return;
     }
     abrirDetalleLead(conversacionId);
-    cargarLeads();
+    actualizarTransferidoEnTabla(conversacionId, true);
   }
 
   // --- Arranque ---
