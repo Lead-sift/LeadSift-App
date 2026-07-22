@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { supabase } from "../../services/supabaseClient.js";
+import { generarFacturaPdf } from "../../services/generarFacturaPdf.js";
+import { obtenerTransporteEmail } from "../../services/emailClient.js";
 
 export const facturacionAdminRouter = Router();
 
@@ -145,4 +147,118 @@ facturacionAdminRouter.post("/generar", async (req, res) => {
   }
 
   res.json(generados);
+});
+
+async function cargarReciboConEmpresa(reciboId: string) {
+  const { data: recibo, error } = await supabase.from("recibos").select("*").eq("id", reciboId).single();
+  if (error || !recibo) return { recibo: null, empresa: null };
+
+  const { data: empresa } = await supabase
+    .from("empresas")
+    .select(
+      "nombre, nif_cif_nie, codigo_cliente, tipo_via, nombre_via, numero_via, municipio, provincia, codigo_postal, cuenta_facturacion, email_contacto, canal_config"
+    )
+    .eq("id", recibo.empresa_id)
+    .single();
+
+  return { recibo, empresa };
+}
+
+// Genera el PDF (asignando número de factura si aún no lo tiene) y lo sube
+// al repositorio del cliente en Storage.
+facturacionAdminRouter.post("/:reciboId/emitir", async (req, res) => {
+  const { recibo, empresa } = await cargarReciboConEmpresa(req.params.reciboId);
+  if (!recibo || !empresa) return res.status(404).json({ error: "Recibo no encontrado" });
+
+  let numeroFactura = recibo.numero_factura as string | null;
+  if (!numeroFactura) {
+    const { data: numeroGenerado, error: errorNumero } = await supabase.rpc("siguiente_numero_factura");
+    if (errorNumero || !numeroGenerado) {
+      return res.status(500).json({ error: errorNumero?.message ?? "No se pudo generar el número de factura" });
+    }
+    numeroFactura = numeroGenerado as string;
+  }
+
+  const pdfBuffer = await generarFacturaPdf(empresa as any, { ...recibo, numero_factura: numeroFactura } as any);
+  const pdfPath = `${recibo.empresa_id}/${numeroFactura}.pdf`;
+
+  const { error: errorSubida } = await supabase.storage
+    .from("facturas-clientes")
+    .upload(pdfPath, pdfBuffer, { contentType: "application/pdf", upsert: true });
+
+  if (errorSubida) return res.status(500).json({ error: errorSubida.message });
+
+  const { data: actualizado, error: errorUpdate } = await supabase
+    .from("recibos")
+    .update({ numero_factura: numeroFactura, pdf_path: pdfPath, emitido_en: new Date().toISOString() })
+    .eq("id", req.params.reciboId)
+    .select()
+    .single();
+
+  if (errorUpdate) return res.status(500).json({ error: errorUpdate.message });
+  res.json(actualizado);
+});
+
+// Enlace temporal (1 hora) para descargar/ver el PDF de una factura ya emitida.
+facturacionAdminRouter.get("/:reciboId/pdf", async (req, res) => {
+  const { data: recibo, error } = await supabase
+    .from("recibos")
+    .select("pdf_path")
+    .eq("id", req.params.reciboId)
+    .single();
+
+  if (error || !recibo?.pdf_path) return res.status(404).json({ error: "Esta factura todavía no se ha emitido" });
+
+  const { data, error: errorFirma } = await supabase.storage
+    .from("facturas-clientes")
+    .createSignedUrl(recibo.pdf_path, 60 * 60);
+
+  if (errorFirma || !data) return res.status(500).json({ error: errorFirma?.message ?? "No se pudo generar el enlace" });
+  res.json({ url: data.signedUrl });
+});
+
+// Envía la factura ya emitida por email al contacto de facturación del cliente.
+facturacionAdminRouter.post("/:reciboId/enviar", async (req, res) => {
+  const { recibo, empresa } = await cargarReciboConEmpresa(req.params.reciboId);
+  if (!recibo || !empresa) return res.status(404).json({ error: "Recibo no encontrado" });
+  if (!recibo.pdf_path || !recibo.numero_factura) {
+    return res.status(400).json({ error: "Primero hay que emitir la factura" });
+  }
+
+  const destinatario = empresa.email_contacto || (empresa.canal_config as any)?.email_notificacion;
+  if (!destinatario) {
+    return res.status(400).json({ error: "Esta empresa no tiene ningún email de contacto configurado" });
+  }
+
+  const { data: pdfDescargado, error: errorDescarga } = await supabase.storage
+    .from("facturas-clientes")
+    .download(recibo.pdf_path);
+
+  if (errorDescarga || !pdfDescargado) {
+    return res.status(500).json({ error: errorDescarga?.message ?? "No se pudo recuperar el PDF" });
+  }
+
+  try {
+    const { transporte, remitente } = obtenerTransporteEmail();
+    const pdfBuffer = Buffer.from(await pdfDescargado.arrayBuffer());
+    await transporte.sendMail({
+      from: remitente,
+      to: destinatario,
+      subject: `Factura ${recibo.numero_factura} — ${empresa.nombre}`,
+      text: `Adjuntamos la factura ${recibo.numero_factura} correspondiente al periodo ${recibo.mes}/${recibo.anio}. Total: ${recibo.total} €.`,
+      attachments: [{ filename: `${recibo.numero_factura}.pdf`, content: pdfBuffer }],
+    });
+  } catch (e) {
+    return res.status(500).json({ error: (e as Error).message });
+  }
+
+  const { data: actualizado, error: errorUpdate } = await supabase
+    .from("recibos")
+    .update({ enviado_en: new Date().toISOString() })
+    .eq("id", req.params.reciboId)
+    .select()
+    .single();
+
+  if (errorUpdate) return res.status(500).json({ error: errorUpdate.message });
+  res.json(actualizado);
 });

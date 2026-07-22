@@ -92,6 +92,15 @@ empresasAdminRouter.post("/", async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: error.message });
+
+  // Repositorio de facturas del cliente: Supabase Storage no tiene carpetas
+  // reales (son solo prefijos de ruta), así que se sube un marcador vacío
+  // para que la "carpeta" del cliente exista y sea visible desde ya.
+  await supabase.storage.from("facturas-clientes").upload(`${data.id}/.keep`, new Blob([""]), {
+    contentType: "text/plain",
+    upsert: true,
+  });
+
   res.status(201).json(data);
 });
 

@@ -1616,8 +1616,8 @@
       <table id="tabla-recibos">
         <thead>
           <tr>
-            <th>Cliente</th><th>Paquete</th><th>Método</th><th>Leads contados</th>
-            <th>Incluidos</th><th>Exceso</th><th>Implementación</th><th>Total</th><th>Generado</th>
+            <th>Nº Factura</th><th>Cliente</th><th>Paquete</th><th>Método</th><th>Leads contados</th>
+            <th>Incluidos</th><th>Exceso</th><th>Implementación</th><th>Total</th><th>Estado</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -1637,7 +1637,7 @@
     pie.innerHTML = '';
 
     if (!datos.length) {
-      cuerpo.innerHTML = '<tr><td colspan="9" style="color:var(--gris);">Sin recibos generados para este mes todavía.</td></tr>';
+      cuerpo.innerHTML = '<tr><td colspan="11" style="color:var(--gris);">Sin recibos generados para este mes todavía.</td></tr>';
       return;
     }
 
@@ -1645,7 +1645,9 @@
     for (const r of datos) {
       total += Number(r.total);
       const fila = document.createElement('tr');
+      const estado = r.enviado_en ? 'Enviada' : r.emitido_en ? 'Emitida' : 'Sin emitir';
       fila.innerHTML = `
+        <td style="font-family:monospace;">${r.numero_factura ?? '—'}</td>
         <td>${r.empresas?.nombre ?? '—'} <span style="font-family:monospace; font-size:0.75rem; color:var(--gris);">(${r.empresas?.codigo_cliente ?? '—'})</span></td>
         <td>${r.paquete_nombre ?? '—'}</td>
         <td>${r.metodo_facturacion === 'lead' ? 'Por lead' : 'Suscripción'}</td>
@@ -1654,11 +1656,49 @@
         <td>${r.leads_exceso}</td>
         <td>${r.incluye_implementacion ? formatoEuros(r.coste_implementacion) : '—'}</td>
         <td><strong>${formatoEuros(r.total)}</strong></td>
-        <td>${new Date(r.generado_en).toLocaleString('es-ES')}</td>
+        <td><span class="badge badge-${r.enviado_en ? 'confirmado' : r.emitido_en ? 'templado' : 'desestimado'}">${estado}</span></td>
+        <td>
+          <button class="secundario" onclick="emitirFactura('${r.id}')">${r.emitido_en ? 'Re-emitir' : 'Emitir'}</button>
+          ${r.emitido_en ? `<button class="secundario" onclick="verFacturaPdf('${r.id}')">Ver PDF</button>` : ''}
+          ${r.emitido_en ? `<button class="secundario" onclick="enviarFactura('${r.id}')">${r.enviado_en ? 'Reenviar' : 'Enviar'} por email</button>` : ''}
+        </td>
       `;
       cuerpo.appendChild(fila);
     }
-    pie.innerHTML = `<tr><td colspan="7"></td><td colspan="2"><strong>Total: ${formatoEuros(total)}</strong></td></tr>`;
+    pie.innerHTML = `<tr><td colspan="8"></td><td colspan="3"><strong>Total: ${formatoEuros(total)}</strong></td></tr>`;
+  }
+
+  async function emitirFactura(reciboId) {
+    const mensaje = document.getElementById('mensaje-facturacion');
+    mensaje.textContent = 'Generando PDF...';
+    const resultado = await api(`/api/admin/facturacion/${reciboId}/emitir`, { method: 'POST' });
+    if (resultado?.error) {
+      mensaje.textContent = 'Error: ' + JSON.stringify(resultado.error);
+      return;
+    }
+    mensaje.textContent = `✅ Factura ${resultado.numero_factura} emitida y guardada en el repositorio del cliente.`;
+    cargarRecibos();
+  }
+
+  async function verFacturaPdf(reciboId) {
+    const resultado = await api(`/api/admin/facturacion/${reciboId}/pdf`);
+    if (resultado?.error) {
+      alert(resultado.error);
+      return;
+    }
+    window.open(resultado.url, '_blank');
+  }
+
+  async function enviarFactura(reciboId) {
+    const mensaje = document.getElementById('mensaje-facturacion');
+    mensaje.textContent = 'Enviando factura por email...';
+    const resultado = await api(`/api/admin/facturacion/${reciboId}/enviar`, { method: 'POST' });
+    if (resultado?.error) {
+      mensaje.textContent = 'Error: ' + JSON.stringify(resultado.error);
+      return;
+    }
+    mensaje.textContent = '✅ Factura enviada por email correctamente.';
+    cargarRecibos();
   }
 
   async function generarRecibosMes() {
