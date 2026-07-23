@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { supabase } from "../../services/supabaseClient.js";
+import { CATALOGO_PORTAL, todasLasClaves } from "../../config/portalFuncionalidades.js";
 
 export const usuariosAdminRouter = Router();
 
@@ -126,5 +127,58 @@ usuariosAdminRouter.delete("/:id", async (req, res) => {
   await supabase.from("perfiles").delete().eq("id", req.params.id);
   const { error } = await supabase.auth.admin.deleteUser(req.params.id);
   if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// Devuelve el catálogo completo de pestañas/acciones del futuro portal de
+// agente, con el estado habilitado/deshabilitado guardado para este
+// usuario (todo habilitado por defecto si no hay ninguna fila guardada).
+usuariosAdminRouter.get("/:id/permisos-portal", async (req, res) => {
+  const { data: deshabilitados, error } = await supabase
+    .from("portal_permisos")
+    .select("clave, habilitado")
+    .eq("perfil_id", req.params.id);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const mapaGuardado = new Map((deshabilitados ?? []).map((p) => [p.clave, p.habilitado]));
+
+  res.json(
+    CATALOGO_PORTAL.map((pestana) => ({
+      ...pestana,
+      acciones: pestana.acciones.map((accion) => ({
+        ...accion,
+        habilitado: mapaGuardado.get(accion.clave) ?? true,
+      })),
+    }))
+  );
+});
+
+const esquemaPermisosPortal = z.object({
+  // Solo se envían las claves que el admin ha desmarcado; todo lo que no
+  // aparezca aquí queda habilitado.
+  deshabilitadas: z.array(z.string()),
+});
+
+usuariosAdminRouter.put("/:id/permisos-portal", async (req, res) => {
+  const parseo = esquemaPermisosPortal.safeParse(req.body);
+  if (!parseo.success) return res.status(400).json({ error: parseo.error.flatten() });
+
+  const clavesValidas = new Set(todasLasClaves());
+  const deshabilitadas = parseo.data.deshabilitadas.filter((c) => clavesValidas.has(c));
+
+  await supabase.from("portal_permisos").delete().eq("perfil_id", req.params.id);
+
+  if (deshabilitadas.length > 0) {
+    const { error } = await supabase.from("portal_permisos").insert(
+      deshabilitadas.map((clave) => ({
+        perfil_id: req.params.id,
+        clave,
+        habilitado: false,
+      }))
+    );
+    if (error) return res.status(500).json({ error: error.message });
+  }
+
   res.json({ ok: true });
 });

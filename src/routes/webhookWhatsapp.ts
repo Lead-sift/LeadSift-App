@@ -18,9 +18,14 @@ webhookWhatsappRouter.get("/", (req, res) => {
 
 // Meta reintenta el envío si no respondemos rápido con 200, así que se
 // responde inmediatamente y se procesa el payload sin bloquear la respuesta.
-// TODO: cuando exista el dashboard multi-tenant (hito pendiente), mapear el
-// phone_number_id del payload a la empresa cliente correspondiente y pasar
-// el mensaje por procesarMensajeEntrante(), igual que ya hace /api/ingesta.
+// TODO: mapear el phone_number_id del payload al par (empresa, canal) en
+// empresa_canales.detalles.phone_number_id — el mismo phone_number_id puede
+// pertenecer a un canal "whatsapp_independiente" o "whatsapp_coexistence"
+// según cómo se haya conectado ese cliente (ver Servicios). El bloqueo real
+// para conectar el segundo (Coexistence) es la verificación empresarial de
+// Meta, no el código: la app/webhook ya está lista para cualquiera de los
+// dos productos. Una vez identificado el canal, pasar por
+// procesarMensajeEntrante(), igual que ya hace /api/ingesta.
 webhookWhatsappRouter.post("/", (req, res) => {
   res.sendStatus(200);
 

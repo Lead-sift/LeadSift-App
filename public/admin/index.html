@@ -241,7 +241,7 @@
 
       <h3 style="margin-top:2rem;">Todas las consultas</h3>
       <div class="filtros">
-        <select id="filtro-canal"><option value="">Todos los canales</option><option value="email">Email</option><option value="formulario">Formulario</option><option value="whatsapp">WhatsApp</option></select>
+        <select id="filtro-canal"><option value="">Todos los canales</option><option value="email">Email</option><option value="formulario">Formulario</option><option value="whatsapp_independiente">WhatsApp Bot independiente</option><option value="whatsapp_coexistence">WhatsApp Bot Coexistence</option></select>
         <select id="filtro-intencion"><option value="">Toda intención</option><option value="spam">Spam</option><option value="informativa">Informativa</option><option value="lead_potencial">Lead potencial</option><option value="consulta_disponibilidad">Consulta disponibilidad</option></select>
         <button class="secundario" onclick="cargarConsultasGenerales()">Filtrar</button>
       </div>
@@ -1044,7 +1044,15 @@
 
     const canales = await api(`/api/admin/canales/${empresa.id}`);
     const canalFormulario = canales.find((c) => c.canal === 'formulario') || {};
-    const canalWhatsapp = canales.find((c) => c.canal === 'whatsapp') || {};
+    const canalWhatsappIndependiente = canales.find((c) => c.canal === 'whatsapp_independiente') || {};
+    const canalWhatsappCoexistence = canales.find((c) => c.canal === 'whatsapp_coexistence') || {};
+
+    const filaPausa = (canal, datosCanal) => `
+      <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:normal; margin-top:0.5rem;">
+        <input type="checkbox" id="chk-pausa-${canal}" style="width:auto;" ${datosCanal.pausado ? 'checked' : ''} onchange="guardarPausaCanal('${empresa.id}', '${canal}')" />
+        Bot en pausa para este canal (deja de responder automáticamente sin desconectar nada)
+      </label>
+    `;
 
     const contenedor = document.getElementById('cliente-fijado-servicios');
     contenedor.innerHTML = `
@@ -1056,7 +1064,7 @@
           <tbody>
             <tr>
               <td style="vertical-align:top;"><input type="checkbox" id="chk-formulario" ${canalFormulario.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
-              <td style="vertical-align:top;">Formulario</td>
+              <td style="vertical-align:top;">Formulario web</td>
               <td>
                 <label style="font-size:0.8rem;">URL del formulario web del cliente (referencia)</label>
                 <input id="form-url-formulario" placeholder="https://clienteweb.com/contacto" value="${canalFormulario.detalles?.url_formulario ?? ''}" />
@@ -1065,21 +1073,41 @@
                   <code>POST ${window.location.origin}/api/ingesta</code><br>
                   con el cuerpo: <code>{ "empresaId": "${empresa.id}", "canal": "formulario", "remitenteContacto": "...", "texto": "..." }</code>
                 </p>
+                ${filaPausa('formulario', canalFormulario)}
               </td>
               <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'formulario')">Guardar</button></td>
             </tr>
             <tr>
-              <td style="vertical-align:top;"><input type="checkbox" id="chk-whatsapp" ${canalWhatsapp.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
-              <td style="vertical-align:top;">WhatsApp</td>
+              <td style="vertical-align:top;"><input type="checkbox" id="chk-whatsapp_independiente" ${canalWhatsappIndependiente.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
+              <td style="vertical-align:top;">WhatsApp Bot independiente
+                <p style="font-size:0.75rem; color:var(--gris); margin:0.2rem 0 0;">Número nuevo dedicado a captación, gestionado 100% por nuestra Cloud API.</p>
+              </td>
               <td>
                 <label style="font-size:0.8rem;">Phone Number ID</label>
-                <input id="form-phone-id" placeholder="1233368339858331" value="${canalWhatsapp.detalles?.phone_number_id ?? ''}" />
+                <input id="form-phone-id-whatsapp_independiente" placeholder="1233368339858331" value="${canalWhatsappIndependiente.detalles?.phone_number_id ?? ''}" />
                 <label style="font-size:0.8rem; margin-top:0.4rem;">WhatsApp Business Account ID (WABA)</label>
-                <input id="form-waba-id" placeholder="1720165655798140" value="${canalWhatsapp.detalles?.waba_id ?? ''}" />
+                <input id="form-waba-id-whatsapp_independiente" placeholder="1720165655798140" value="${canalWhatsappIndependiente.detalles?.waba_id ?? ''}" />
                 <label style="font-size:0.8rem; margin-top:0.4rem;">Access Token</label>
-                <input id="form-access-token" type="password" placeholder="EAAxxxxxxx..." value="${canalWhatsapp.detalles?.access_token ?? ''}" />
+                <input id="form-access-token-whatsapp_independiente" type="password" placeholder="EAAxxxxxxx..." value="${canalWhatsappIndependiente.detalles?.access_token ?? ''}" />
+                ${filaPausa('whatsapp_independiente', canalWhatsappIndependiente)}
               </td>
-              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'whatsapp')">Guardar</button></td>
+              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'whatsapp_independiente')">Guardar</button></td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;"><input type="checkbox" id="chk-whatsapp_coexistence" ${canalWhatsappCoexistence.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
+              <td style="vertical-align:top;">WhatsApp Bot Coexistence
+                <p style="font-size:0.75rem; color:var(--gris); margin:0.2rem 0 0;">Número existente del cliente; sigue usable desde su app de WhatsApp Business (función de coexistencia de Meta). Requiere verificación empresarial de Meta completada.</p>
+              </td>
+              <td>
+                <label style="font-size:0.8rem;">Phone Number ID</label>
+                <input id="form-phone-id-whatsapp_coexistence" placeholder="1233368339858331" value="${canalWhatsappCoexistence.detalles?.phone_number_id ?? ''}" />
+                <label style="font-size:0.8rem; margin-top:0.4rem;">WhatsApp Business Account ID (WABA)</label>
+                <input id="form-waba-id-whatsapp_coexistence" placeholder="1720165655798140" value="${canalWhatsappCoexistence.detalles?.waba_id ?? ''}" />
+                <label style="font-size:0.8rem; margin-top:0.4rem;">Access Token</label>
+                <input id="form-access-token-whatsapp_coexistence" type="password" placeholder="EAAxxxxxxx..." value="${canalWhatsappCoexistence.detalles?.access_token ?? ''}" />
+                ${filaPausa('whatsapp_coexistence', canalWhatsappCoexistence)}
+              </td>
+              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'whatsapp_coexistence')">Guardar</button></td>
             </tr>
           </tbody>
         </table>
@@ -1156,8 +1184,9 @@
 
   // --- Paquete contratado (comparativa dentro de Servicios) ---
   const SERVICIOS_PAQUETE = [
-    { clave: 'formulario', etiqueta: 'Canal Formulario' },
-    { clave: 'whatsapp', etiqueta: 'Canal WhatsApp' },
+    { clave: 'formulario', etiqueta: 'Canal Formulario web' },
+    { clave: 'whatsapp_independiente', etiqueta: 'Canal WhatsApp Bot independiente' },
+    { clave: 'whatsapp_coexistence', etiqueta: 'Canal WhatsApp Bot Coexistence' },
     { clave: 'multicanal', etiqueta: 'Multi-canal simultáneo' },
     { clave: 'catalogo_fotos', etiqueta: 'Catálogo de productos con fotos' },
     { clave: 'resumen_ia', etiqueta: 'Resumen de leads con IA' },
@@ -1428,15 +1457,22 @@
       activo = document.getElementById('chk-formulario').checked;
       detalles = { url_formulario: document.getElementById('form-url-formulario').value.trim() };
     } else {
-      activo = document.getElementById('chk-whatsapp').checked;
+      activo = document.getElementById(`chk-${canal}`).checked;
       detalles = {
-        phone_number_id: document.getElementById('form-phone-id').value.trim(),
-        waba_id: document.getElementById('form-waba-id').value.trim(),
-        access_token: document.getElementById('form-access-token').value.trim(),
+        phone_number_id: document.getElementById(`form-phone-id-${canal}`).value.trim(),
+        waba_id: document.getElementById(`form-waba-id-${canal}`).value.trim(),
+        access_token: document.getElementById(`form-access-token-${canal}`).value.trim(),
       };
     }
     await api(`/api/admin/canales/${empresaId}`, { method: 'PUT', body: JSON.stringify({ canal, activo, detalles }) });
     mensaje.textContent = `Canal "${canal}" guardado correctamente.`;
+  }
+
+  async function guardarPausaCanal(empresaId, canal) {
+    const pausado = document.getElementById(`chk-pausa-${canal}`).checked;
+    await api(`/api/admin/canales/${empresaId}/pausa`, { method: 'PUT', body: JSON.stringify({ canal, pausado }) });
+    const mensaje = document.getElementById('mensaje-servicios');
+    if (mensaje) mensaje.textContent = pausado ? `Bot pausado para el canal "${canal}".` : `Bot reanudado para el canal "${canal}".`;
   }
 
   // --- Vista: Dashboard ---
@@ -1532,7 +1568,8 @@
         </select>
         <select id="filtro-lead-canal">
           <option value="">Todos los canales</option>
-          <option value="whatsapp">WhatsApp</option>
+          <option value="whatsapp_independiente">WhatsApp Bot independiente</option>
+          <option value="whatsapp_coexistence">WhatsApp Bot Coexistence</option>
           <option value="formulario">Formulario</option>
           <option value="email">Email</option>
         </select>
@@ -2127,8 +2164,53 @@
         </div>
         <div id="usuario-password-contenedor"></div>
         <p id="mensaje-usuario" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+        <div id="usuario-permisos-portal-contenedor"></div>
       </div>
     `;
+
+    if (!esNuevo && usuario.rol === 'client_user') {
+      cargarPermisosPortal(usuario.id);
+    }
+  }
+
+  // --- Permisos del futuro portal de agente (perfilado por usuario externo) ---
+  async function cargarPermisosPortal(usuarioId) {
+    const contenedor = document.getElementById('usuario-permisos-portal-contenedor');
+    contenedor.innerHTML = '<h4 style="margin-top:1.5rem;">Portal de agente (próximamente)</h4><p style="color:var(--gris); font-size:0.85rem;">Cargando...</p>';
+
+    const catalogo = await api(`/api/admin/usuarios/${usuarioId}/permisos-portal`);
+    contenedor.innerHTML = `
+      <h4 style="margin-top:1.5rem;">Portal de agente (próximamente)</h4>
+      <p style="font-size:0.8rem; color:var(--gris); margin-top:-0.5rem;">
+        El portal todavía no existe, pero puedes perfilar de antemano qué pestañas/acciones tendrá disponibles este usuario cuando se construya.
+      </p>
+      ${catalogo.map((pestana) => `
+        <div style="margin-top:0.75rem;">
+          <strong style="font-size:0.88rem;">${pestana.etiqueta}</strong>
+          <p style="font-size:0.78rem; color:var(--gris); margin:0.1rem 0 0.3rem;">${pestana.descripcion}</p>
+          ${pestana.acciones.map((accion) => `
+            <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; font-weight:normal; margin:0.15rem 0;">
+              <input type="checkbox" class="chk-permiso-portal" data-clave="${accion.clave}" style="width:auto;" ${accion.habilitado ? 'checked' : ''} />
+              ${accion.etiqueta}
+            </label>
+          `).join('')}
+        </div>
+      `).join('')}
+      <button class="secundario" style="margin-top:0.75rem;" onclick="guardarPermisosPortal('${usuarioId}')">Guardar permisos del portal</button>
+      <p id="mensaje-permisos-portal" style="margin-top:0.5rem; font-size:0.9rem;"></p>
+    `;
+  }
+
+  async function guardarPermisosPortal(usuarioId) {
+    const deshabilitadas = [...document.querySelectorAll('.chk-permiso-portal')]
+      .filter((chk) => !chk.checked)
+      .map((chk) => chk.dataset.clave);
+
+    await api(`/api/admin/usuarios/${usuarioId}/permisos-portal`, {
+      method: 'PUT',
+      body: JSON.stringify({ deshabilitadas }),
+    });
+    document.getElementById('mensaje-permisos-portal').textContent = '✅ Permisos del portal guardados.';
   }
 
   function actualizarVisibilidadEmpresaUsuario() {

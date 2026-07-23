@@ -19,7 +19,7 @@ async function main() {
     },
     {
       empresaId,
-      canal: "whatsapp" as const,
+      canal: "whatsapp_independiente" as const,
       remitenteContacto: "+34600111222",
       texto:
         "Bon dia, estem organitzant una boda petita i voldríem llogar l'espai per unes 85 persones, es podria fer un dissabte a la nit?",
@@ -32,7 +32,7 @@ async function main() {
     },
     {
       empresaId,
-      canal: "whatsapp" as const,
+      canal: "whatsapp_independiente" as const,
       remitenteContacto: "+34600333444",
       texto: "Hola, ¿tenéis libre el sábado 15 de agosto por la tarde?",
     },

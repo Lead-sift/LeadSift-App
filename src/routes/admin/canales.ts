@@ -24,8 +24,10 @@ canalesAdminRouter.get("/:empresaId", async (req, res) => {
   res.json(data);
 });
 
+const CANALES = ["formulario", "whatsapp_independiente", "whatsapp_coexistence", "email"] as const;
+
 const esquemaCanal = z.object({
-  canal: z.enum(["whatsapp", "formulario", "email", "instagram"]),
+  canal: z.enum(CANALES),
   activo: z.boolean(),
   detalles: z.record(z.unknown()).default({}),
 });
@@ -48,6 +50,36 @@ canalesAdminRouter.put("/:empresaId", async (req, res) => {
         canal,
         estado_conexion: activo ? "conectado" : "desconectado",
         detalles,
+      },
+      { onConflict: "empresa_id,canal" }
+    )
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+const esquemaPausa = z.object({
+  canal: z.enum(CANALES),
+  pausado: z.boolean(),
+});
+
+// Pausa/reanuda el bot para un canal y cliente concretos, sin tocar sus
+// credenciales de conexión (estado_conexion/detalles quedan intactos).
+canalesAdminRouter.put("/:empresaId/pausa", async (req, res) => {
+  const parseo = esquemaPausa.safeParse(req.body);
+  if (!parseo.success) return res.status(400).json({ error: parseo.error.flatten() });
+
+  const { data, error } = await supabase
+    .from("empresa_canales")
+    .upsert(
+      {
+        empresa_id: req.params.empresaId,
+        canal: parseo.data.canal,
+        pausado: parseo.data.pausado,
+        pausado_en: parseo.data.pausado ? new Date().toISOString() : null,
+        pausado_por: parseo.data.pausado ? req.perfil?.id ?? null : null,
       },
       { onConflict: "empresa_id,canal" }
     )

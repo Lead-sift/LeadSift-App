@@ -7,7 +7,7 @@ import { iniciarActividad, actualizarEtapaActividad, finalizarActividad } from "
 
 export interface MensajeEntrante {
   empresaId: string;
-  canal: "email" | "formulario" | "whatsapp";
+  canal: "email" | "formulario" | "whatsapp_independiente" | "whatsapp_coexistence";
   remitenteContacto: string;
   texto: string;
 }
@@ -81,6 +81,18 @@ async function procesarMensajeEntranteInterno(
     { onConflict: "empresa_id,canal" }
   );
 
+  // El bot puede estar pausado para este canal y cliente (interruptor manual
+  // desde Servicios, sin desconectar el canal): si lo está, el mensaje se
+  // sigue clasificando y guardando con normalidad, pero ninguna respuesta se
+  // envía en automático — todo queda pendiente de que alguien lo atienda.
+  const { data: canalConfig } = await supabase
+    .from("empresa_canales")
+    .select("pausado")
+    .eq("empresa_id", mensaje.empresaId)
+    .eq("canal", mensaje.canal)
+    .maybeSingle();
+  const botPausado = canalConfig?.pausado ?? false;
+
   const { data: mensajeCliente } = await supabase
     .from("mensajes")
     .insert({
@@ -116,13 +128,15 @@ async function procesarMensajeEntranteInterno(
         empresa_id: mensaje.empresaId,
         origen: "ia",
         contenido: respuesta,
-        requiere_aprobacion: false, // bajo riesgo: se envía automáticamente
-        aprobado: true,
+        // Bajo riesgo: normalmente se envía automáticamente, pero con el
+        // canal en pausa nada sale sin que alguien lo revise a mano.
+        requiere_aprobacion: botPausado,
+        aprobado: botPausado ? null : true,
       })
       .select()
       .single();
     await registrarConsumo(mensaje.empresaId, mensajeIa?.id ?? null, uso);
-    return { conversacionId: conversacion.id, intencion, lead: null, respuesta };
+    return { conversacionId: conversacion.id, intencion, lead: null, respuesta, botPausado };
   }
 
   actualizarEtapaActividad(idActividad, "cualificando");
@@ -176,5 +190,5 @@ async function procesarMensajeEntranteInterno(
     }
   }
 
-  return { conversacionId: conversacion.id, intencion, lead, ficha };
+  return { conversacionId: conversacion.id, intencion, lead, ficha, botPausado };
 }
