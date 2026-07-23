@@ -37,9 +37,10 @@ portalRouter.get("/resumen", async (req, res) => {
   inicioMes.setHours(0, 0, 0, 0);
   const leadsEsteMes = leads.filter((l) => new Date(l.created_at) >= inicioMes).length;
 
-  const [{ data: canales }, { data: empresa }] = await Promise.all([
+  const [{ data: canales }, { data: empresa }, { count: pendientesGestion }] = await Promise.all([
     supabase.from("empresa_canales").select("canal, estado_conexion, pausado").eq("empresa_id", empresaId),
     supabase.from("empresas").select("nombre").eq("id", empresaId).maybeSingle(),
+    supabase.from("contactos_pausados").select("*", { count: "exact", head: true }).eq("empresa_id", empresaId),
   ]);
 
   res.json({
@@ -50,6 +51,7 @@ portalRouter.get("/resumen", async (req, res) => {
     leadsEsteMes,
     canales: canales ?? [],
     empresaNombre: empresa?.nombre ?? null,
+    pendientesGestion: pendientesGestion ?? 0,
   });
 });
 

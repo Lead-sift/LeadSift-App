@@ -63,18 +63,33 @@
   .leads-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
   .leads-tabla-col { flex: 1; min-width: 0; }
   .leads-detalle-col { flex: 0 0 0; width: 0; overflow: hidden; }
-  .leads-layout.detalle-abierto .leads-tabla-col { flex: 0 0 auto; width: auto; }
+  .leads-layout.detalle-abierto .leads-tabla-col { flex: 0 0 220px; width: 220px; }
   .leads-layout.detalle-abierto .leads-tabla-col .col-extra { display: none; }
   .leads-layout.detalle-abierto .leads-detalle-col { flex: 1 1 auto; width: auto; overflow: visible; }
   .leads-detalle-col .panel-detalle-lead { margin-top: 0; position: sticky; top: 1rem; }
 
-  .conversacion-caja { background: #f9f5ee; border: 1px solid var(--borde); border-radius: 6px; padding: 0.75rem; max-height: 320px; overflow-y: auto; margin-top: 0.4rem; }
+  .conversacion-caja { background: #f9f5ee; border: 1px solid var(--borde); border-radius: 6px; padding: 0.9rem; height: 58vh; overflow-y: auto; margin-top: 0.4rem; }
   .msg-cliente { margin-bottom: 0.6rem; }
   .msg-cliente strong { color: var(--arcilla-oscuro); }
   .msg-ia strong, .msg-humano strong { color: var(--ciruela); }
 
   .lead-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
   .lead-campo strong { display: block; font-size: 0.75rem; color: var(--gris); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem; }
+
+  .nav-contador { display: inline-block; margin-left: 0.4rem; background: var(--ciruela); color: white; font-size: 0.72rem; font-weight: 700; border-radius: 9px; padding: 0.05rem 0.5rem; }
+
+  .canales-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  .canal-card { background: white; border: 1px solid var(--borde); border-radius: 8px; padding: 1rem; }
+  .canal-card h4 { margin: 0 0 0.5rem; font-size: 1rem; }
+  .canal-card .canal-stats { display: flex; gap: 0.75rem; margin: 0.75rem 0; }
+  .canal-card .canal-stat { text-align: center; flex: 1; }
+  .canal-card .canal-stat .numero { font-size: 1.25rem; font-weight: bold; color: var(--arcilla-oscuro); }
+  .canal-card .canal-stat .etiqueta { font-size: 0.7rem; color: var(--gris); }
+  .canal-card .canal-acciones { display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap; }
+
+  .segmentos { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+  .segmento-chip { padding: 0.4rem 0.85rem; border-radius: 16px; border: 1px solid var(--borde); background: white; font-size: 0.85rem; cursor: pointer; }
+  .segmento-chip.activo { background: var(--arcilla); color: white; border-color: var(--arcilla); }
 </style>
 </head>
 <body>
@@ -86,7 +101,7 @@
     </div>
     <nav>
       <a class="enlace-nav" data-vista="resumen" onclick="irA('resumen')">Resumen</a>
-      <a class="enlace-nav" data-vista="leads" onclick="irA('leads')">Leads</a>
+      <a class="enlace-nav" data-vista="leads" onclick="irA('leads')">Leads<span id="contador-gestion" class="nav-contador" style="display:none;"></span></a>
       <a class="enlace-nav" data-vista="canales" onclick="irA('canales')">Canales</a>
       <a class="enlace-nav" data-vista="documentos" onclick="irA('documentos')">Documentos</a>
       <a class="enlace-nav" data-vista="facturacion" onclick="irA('facturacion')">Facturación</a>
@@ -133,10 +148,25 @@
 
   const vistas = { resumen: renderResumen, leads: renderLeads, canales: renderCanales, documentos: renderDocumentos, facturacion: renderFacturacion };
 
+  // Filtro pendiente al saltar desde "Canales" hacia "Leads" (canal + segmento preseleccionados)
+  let filtroLeadsPendiente = null;
+
   function irA(vista) {
     document.querySelectorAll('.enlace-nav').forEach((a) => a.classList.toggle('activo', a.dataset.vista === vista));
     window.location.hash = vista;
     vistas[vista]();
+  }
+
+  function irACanalEnLeads(canal, segmento) {
+    filtroLeadsPendiente = { canal, segmento };
+    irA('leads');
+  }
+
+  async function actualizarContadorGestion() {
+    const r = await api('/api/portal/resumen');
+    const span = document.getElementById('contador-gestion');
+    if (r?.pendientesGestion) { span.textContent = r.pendientesGestion; span.style.display = 'inline-block'; }
+    else { span.style.display = 'none'; }
   }
 
   // --- Resumen ---
@@ -180,20 +210,27 @@
 
     contenido.innerHTML = `
       <h2>Canales</h2>
-      <p style="color:var(--gris); font-size:0.9rem; margin-top:-0.5rem;">Puedes pausar un canal completo (deja de responder automáticamente en todo ese canal) sin perder la conexión.</p>
-      <table>
-        <thead><tr><th>Canal</th><th>Estado de conexión</th><th>Bot</th><th>Acción</th></tr></thead>
-        <tbody>
-          ${canales.map((c) => `
-            <tr>
-              <td>${CANALES_ETIQUETA[c.canal] ?? c.canal}</td>
-              <td>${c.estado_conexion === 'conectado' ? '<span class="badge badge-confirmado">Conectado</span>' : '<span class="badge badge-spam">Desconectado</span>'}</td>
-              <td>${c.pausado ? '<span class="badge badge-pausado">En pausa</span>' : '<span class="badge badge-confirmado">Activo</span>'}</td>
-              <td><button class="secundario" onclick="pausarCanal('${c.canal}', ${!c.pausado})">${c.pausado ? 'Reanudar' : 'Pausar'}</button></td>
-            </tr>
-          `).join('') || '<tr><td colspan="4" style="color:var(--gris);">Sin canales configurados todavía.</td></tr>'}
-        </tbody>
-      </table>
+      <p style="color:var(--gris); font-size:0.9rem; margin-top:-0.5rem;">Desde aquí accedes directamente a los chats de cada canal, y puedes pausar un canal completo sin perder la conexión.</p>
+      <div class="canales-grid">
+        ${canales.map((c) => `
+          <div class="canal-card">
+            <h4>${CANALES_ETIQUETA[c.canal] ?? c.canal}</h4>
+            <div>
+              ${c.estado_conexion === 'conectado' ? '<span class="badge badge-confirmado">Conectado</span>' : '<span class="badge badge-spam">Desconectado</span>'}
+              ${c.pausado ? '<span class="badge badge-pausado">Canal en pausa</span>' : ''}
+            </div>
+            <div class="canal-stats">
+              <div class="canal-stat"><div class="numero">${c.contadores.enCurso}</div><div class="etiqueta">En curso</div></div>
+              <div class="canal-stat"><div class="numero">${c.contadores.gestion}</div><div class="etiqueta">Gestiono yo</div></div>
+              <div class="canal-stat"><div class="numero">${c.contadores.cerrados}</div><div class="etiqueta">Cerrados</div></div>
+            </div>
+            <div class="canal-acciones">
+              <button class="principal" onclick="irACanalEnLeads('${c.canal}', 'todos')">Ver conversaciones</button>
+              <button class="secundario" onclick="pausarCanal('${c.canal}', ${!c.pausado})">${c.pausado ? 'Reanudar canal' : 'Pausar canal'}</button>
+            </div>
+          </div>
+        `).join('') || '<p style="color:var(--gris);">Sin canales configurados todavía.</p>'}
+      </div>
       <p id="mensaje-canales" style="margin-top:0.75rem; font-size:0.9rem;"></p>
     `;
   }
@@ -223,16 +260,34 @@
     'No responde / se pierde el contacto', 'Precio', 'Otro',
   ];
 
+  const SEGMENTOS = {
+    todos: { etiqueta: 'Todos', filtro: () => true },
+    en_curso: { etiqueta: 'En curso (bot)', filtro: (l) => !l.pausado && !l.resultado },
+    gestion: { etiqueta: 'Gestiono yo', filtro: (l) => l.pausado },
+    cerrados: { etiqueta: 'Cerrados', filtro: (l) => l.resultado === 'confirmado' },
+    descartados: { etiqueta: 'Descartados', filtro: (l) => l.resultado === 'desestimado' || l.resultado === 'spam' },
+  };
+
+  let leadsPortalCache = [];
+  let segmentoActivo = 'todos';
+
   async function renderLeads() {
     const contenido = document.getElementById('contenido');
+    const canalPreseleccionado = filtroLeadsPendiente?.canal ?? '';
+    segmentoActivo = filtroLeadsPendiente?.segmento ?? 'todos';
+    filtroLeadsPendiente = null;
+
     contenido.innerHTML = `
       <h2>Leads</h2>
       <div class="filtros">
         <select id="filtro-lead-canal">
           <option value="">Todos los canales</option>
-          ${Object.entries(CANALES_ETIQUETA).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}
+          ${Object.entries(CANALES_ETIQUETA).map(([v, l]) => `<option value="${v}" ${v === canalPreseleccionado ? 'selected' : ''}>${l}</option>`).join('')}
         </select>
         <button class="secundario" onclick="cargarLeadsPortal()">Filtrar</button>
+      </div>
+      <div class="segmentos" id="segmentos-leads">
+        ${Object.entries(SEGMENTOS).map(([clave, s]) => `<button class="segmento-chip ${clave === segmentoActivo ? 'activo' : ''}" data-segmento="${clave}" onclick="cambiarSegmentoLeads('${clave}')">${s.etiqueta}</button>`).join('')}
       </div>
       <div class="leads-layout" id="leads-layout">
         <div class="leads-tabla-col">
@@ -244,7 +299,7 @@
                 <th class="col-extra">Estado</th>
                 <th class="col-extra">Resultado</th>
                 <th class="col-extra">Temperatura</th>
-                <th class="col-extra">Bot</th>
+                <th class="col-extra">Quién lleva</th>
                 <th class="col-extra">Fecha</th>
               </tr>
             </thead>
@@ -257,12 +312,28 @@
     cargarLeadsPortal();
   }
 
+  function cambiarSegmentoLeads(segmento) {
+    segmentoActivo = segmento;
+    document.querySelectorAll('#segmentos-leads .segmento-chip').forEach((b) => b.classList.toggle('activo', b.dataset.segmento === segmento));
+    pintarLeadsPortal();
+  }
+
   async function cargarLeadsPortal() {
     const canal = document.getElementById('filtro-lead-canal').value;
     const query = canal ? `?canal=${canal}` : '';
     const datos = await api(`/api/portal/leads${query}`);
+    if (!datos || datos.error) {
+      document.querySelector('#tabla-leads tbody').innerHTML = `<tr><td colspan="7" style="color:#c0392b;">${datos?.error ?? 'Error'}</td></tr>`;
+      return;
+    }
+    leadsPortalCache = datos;
+    pintarLeadsPortal();
+  }
+
+  function pintarLeadsPortal() {
     const cuerpo = document.querySelector('#tabla-leads tbody');
-    if (!datos || datos.error) { cuerpo.innerHTML = `<tr><td colspan="7" style="color:#c0392b;">${datos?.error ?? 'Error'}</td></tr>`; return; }
+    const datos = leadsPortalCache.filter(SEGMENTOS[segmentoActivo].filtro);
+    if (datos.length === 0) { cuerpo.innerHTML = '<tr><td colspan="7" style="color:var(--gris);">No hay leads en este segmento.</td></tr>'; return; }
 
     cuerpo.innerHTML = '';
     for (const l of datos) {
@@ -276,7 +347,7 @@
         <td class="col-extra"><span class="badge badge-${l.estado}">${textoEstado(l.estado)}</span></td>
         <td class="col-extra">${l.resultado ? `<span class="badge badge-${l.resultado}">${textoResultado(l.resultado)}</span>` : '—'}</td>
         <td class="col-extra"><span class="badge badge-${temperatura}">${temperatura}</span></td>
-        <td class="col-extra">${l.pausado ? '<span class="badge badge-pausado">En pausa</span>' : '<span class="badge badge-confirmado">Activo</span>'}</td>
+        <td class="col-extra">${l.pausado ? '<span class="badge badge-pausado">Tú</span>' : '<span class="badge badge-confirmado">Bot</span>'}</td>
         <td class="col-extra">${new Date(l.createdAt).toLocaleString('es-ES')}</td>
       `;
       cuerpo.appendChild(fila);
@@ -331,7 +402,7 @@
         <p id="mensaje-respuesta-portal" style="font-size:0.85rem; margin-top:0.3rem;"></p>
 
         <h4 style="margin-top:1.25rem;">Control del bot</h4>
-        <p style="font-size:0.85rem; color:var(--gris);">Estado: <strong>${l.pausado ? 'En pausa (lo llevas tú)' : 'Activo (responde automáticamente)'}</strong></p>
+        <p style="font-size:0.85rem; color:var(--gris);">Quién lleva esta conversación: <strong>${l.pausado ? 'Tú (bot en pausa)' : 'Bot (responde automáticamente)'}</strong></p>
         <button class="${l.pausado ? 'principal' : 'secundario'}" onclick="pausarLeadPortal('${conversacionId}', ${!l.pausado})">${l.pausado ? 'Reanudar bot' : 'Tomar el control'}</button>
 
         <h4 style="margin-top:1.25rem;">Resultado</h4>
@@ -359,6 +430,7 @@
     if (resultado?.error) { alert(resultado.error); return; }
     abrirDetalleLeadPortal(conversacionId);
     cargarLeadsPortal();
+    actualizarContadorGestion();
   }
 
   async function enviarRespuestaManual(conversacionId) {
@@ -451,6 +523,8 @@
   // --- Arranque ---
   api('/api/portal/resumen').then((r) => {
     if (r?.empresaNombre) document.getElementById('titulo-empresa').textContent = r.empresaNombre;
+    const span = document.getElementById('contador-gestion');
+    if (r?.pendientesGestion) { span.textContent = r.pendientesGestion; span.style.display = 'inline-block'; }
   });
   const vistaInicial = window.location.hash.replace('#', '') || 'resumen';
   irA(vistas[vistaInicial] ? vistaInicial : 'resumen');
