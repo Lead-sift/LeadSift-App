@@ -21,7 +21,7 @@ async function main() {
     },
     {
       empresaId,
-      canal: "email" as const,
+      canal: "email_funcional" as const,
       remitenteContacto: "curioso@example.com",
       texto: "Hola, ¿cuál es vuestro horario de atención?",
     },

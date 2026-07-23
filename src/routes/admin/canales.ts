@@ -24,7 +24,14 @@ canalesAdminRouter.get("/:empresaId", async (req, res) => {
   res.json(data);
 });
 
-const CANALES = ["formulario", "whatsapp_independiente", "whatsapp_coexistence", "email"] as const;
+const CANALES = [
+  "formulario",
+  "whatsapp_independiente",
+  "whatsapp_coexistence",
+  "email_funcional",
+  "instagram_chat",
+  "chat_web",
+] as const;
 
 const esquemaCanal = z.object({
   canal: z.enum(CANALES),

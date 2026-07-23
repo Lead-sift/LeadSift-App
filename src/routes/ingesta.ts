@@ -7,7 +7,14 @@ export const ingestaRouter = Router();
 
 const esquemaMensaje = z.object({
   empresaId: z.string().uuid(),
-  canal: z.enum(["email", "formulario", "whatsapp_independiente", "whatsapp_coexistence"]),
+  canal: z.enum([
+    "formulario",
+    "whatsapp_independiente",
+    "whatsapp_coexistence",
+    "email_funcional",
+    "instagram_chat",
+    "chat_web",
+  ]),
   remitenteContacto: z.string().min(1),
   texto: z.string().min(1),
 });

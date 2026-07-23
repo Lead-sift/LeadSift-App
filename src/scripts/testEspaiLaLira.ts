@@ -26,7 +26,7 @@ async function main() {
     },
     {
       empresaId,
-      canal: "email" as const,
+      canal: "email_funcional" as const,
       remitenteContacto: "curioso@example.com",
       texto: "Hola, ¿el precio de la tarde entre semana incluye el uso de la cocina?",
     },

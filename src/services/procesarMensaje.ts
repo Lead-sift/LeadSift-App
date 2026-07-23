@@ -7,7 +7,13 @@ import { iniciarActividad, actualizarEtapaActividad, finalizarActividad } from "
 
 export interface MensajeEntrante {
   empresaId: string;
-  canal: "email" | "formulario" | "whatsapp_independiente" | "whatsapp_coexistence";
+  canal:
+    | "formulario"
+    | "whatsapp_independiente"
+    | "whatsapp_coexistence"
+    | "email_funcional"
+    | "instagram_chat"
+    | "chat_web";
   remitenteContacto: string;
   texto: string;
 }

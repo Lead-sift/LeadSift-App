@@ -241,7 +241,7 @@
 
       <h3 style="margin-top:2rem;">Todas las consultas</h3>
       <div class="filtros">
-        <select id="filtro-canal"><option value="">Todos los canales</option><option value="email">Email</option><option value="formulario">Formulario</option><option value="whatsapp_independiente">WhatsApp Bot independiente</option><option value="whatsapp_coexistence">WhatsApp Bot Coexistence</option></select>
+        <select id="filtro-canal"><option value="">Todos los canales</option><option value="formulario">Formulario</option><option value="whatsapp_independiente">WhatsApp Bot independiente</option><option value="whatsapp_coexistence">WhatsApp Bot Coexistence</option><option value="email_funcional">Email funcional</option><option value="instagram_chat">Instagram Chat</option><option value="chat_web">Chat Web</option></select>
         <select id="filtro-intencion"><option value="">Toda intención</option><option value="spam">Spam</option><option value="informativa">Informativa</option><option value="lead_potencial">Lead potencial</option><option value="consulta_disponibilidad">Consulta disponibilidad</option></select>
         <button class="secundario" onclick="cargarConsultasGenerales()">Filtrar</button>
       </div>
@@ -1046,6 +1046,9 @@
     const canalFormulario = canales.find((c) => c.canal === 'formulario') || {};
     const canalWhatsappIndependiente = canales.find((c) => c.canal === 'whatsapp_independiente') || {};
     const canalWhatsappCoexistence = canales.find((c) => c.canal === 'whatsapp_coexistence') || {};
+    const canalEmailFuncional = canales.find((c) => c.canal === 'email_funcional') || {};
+    const canalInstagramChat = canales.find((c) => c.canal === 'instagram_chat') || {};
+    const canalChatWeb = canales.find((c) => c.canal === 'chat_web') || {};
 
     const filaPausa = (canal, datosCanal) => `
       <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; font-weight:normal; margin-top:0.5rem;">
@@ -1108,6 +1111,46 @@
                 ${filaPausa('whatsapp_coexistence', canalWhatsappCoexistence)}
               </td>
               <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'whatsapp_coexistence')">Guardar</button></td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;"><input type="checkbox" id="chk-email_funcional" ${canalEmailFuncional.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
+              <td style="vertical-align:top;">Email funcional
+                <p style="font-size:0.75rem; color:var(--gris); margin:0.2rem 0 0;">Un agente contesta los correos recibidos en la bandeja de la empresa cliente.</p>
+              </td>
+              <td>
+                <label style="font-size:0.8rem;">Email de la bandeja a monitorizar</label>
+                <input id="form-email-bandeja-email_funcional" placeholder="ventas@clienteweb.com" value="${canalEmailFuncional.detalles?.email_bandeja ?? ''}" />
+                <p style="font-size:0.78rem; color:var(--gris); margin:0.5rem 0 0;">La conexión real (IMAP/reenvío automático a esta bandeja) es un desarrollo técnico pendiente; de momento el canal ya acepta leads vía <code>POST /api/ingesta</code> con <code>"canal": "email_funcional"</code>.</p>
+                ${filaPausa('email_funcional', canalEmailFuncional)}
+              </td>
+              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'email_funcional')">Guardar</button></td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;"><input type="checkbox" id="chk-instagram_chat" ${canalInstagramChat.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
+              <td style="vertical-align:top;">Instagram Chat
+                <p style="font-size:0.75rem; color:var(--gris); margin:0.2rem 0 0;">Mensajes directos de la cuenta de Instagram del cliente. Requiere verificación empresarial de Meta completada.</p>
+              </td>
+              <td>
+                <label style="font-size:0.8rem;">Instagram Business Account ID</label>
+                <input id="form-ig-account-id-instagram_chat" placeholder="1789..." value="${canalInstagramChat.detalles?.instagram_account_id ?? ''}" />
+                <label style="font-size:0.8rem; margin-top:0.4rem;">Access Token</label>
+                <input id="form-access-token-instagram_chat" type="password" placeholder="EAAxxxxxxx..." value="${canalInstagramChat.detalles?.access_token ?? ''}" />
+                ${filaPausa('instagram_chat', canalInstagramChat)}
+              </td>
+              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'instagram_chat')">Guardar</button></td>
+            </tr>
+            <tr>
+              <td style="vertical-align:top;"><input type="checkbox" id="chk-chat_web" ${canalChatWeb.estado_conexion === 'conectado' ? 'checked' : ''} /></td>
+              <td style="vertical-align:top;">Chat Web
+                <p style="font-size:0.75rem; color:var(--gris); margin:0.2rem 0 0;">Widget de chat embebido en la web del cliente.</p>
+              </td>
+              <td>
+                <label style="font-size:0.8rem;">URL de la web donde se embebe el widget (referencia)</label>
+                <input id="form-url-widget-chat_web" placeholder="https://clienteweb.com" value="${canalChatWeb.detalles?.url_widget ?? ''}" />
+                <p style="font-size:0.78rem; color:var(--gris); margin:0.5rem 0 0;">El snippet de instalación del widget es un desarrollo técnico pendiente; de momento el canal ya acepta leads vía <code>POST /api/ingesta</code> con <code>"canal": "chat_web"</code>.</p>
+                ${filaPausa('chat_web', canalChatWeb)}
+              </td>
+              <td style="vertical-align:top;"><button class="secundario" onclick="guardarCanalServicio('${empresa.id}', 'chat_web')">Guardar</button></td>
             </tr>
           </tbody>
         </table>
@@ -1187,6 +1230,9 @@
     { clave: 'formulario', etiqueta: 'Canal Formulario web' },
     { clave: 'whatsapp_independiente', etiqueta: 'Canal WhatsApp Bot independiente' },
     { clave: 'whatsapp_coexistence', etiqueta: 'Canal WhatsApp Bot Coexistence' },
+    { clave: 'email_funcional', etiqueta: 'Canal Email funcional' },
+    { clave: 'instagram_chat', etiqueta: 'Canal Instagram Chat' },
+    { clave: 'chat_web', etiqueta: 'Canal Chat Web' },
     { clave: 'multicanal', etiqueta: 'Multi-canal simultáneo' },
     { clave: 'catalogo_fotos', etiqueta: 'Catálogo de productos con fotos' },
     { clave: 'resumen_ia', etiqueta: 'Resumen de leads con IA' },
@@ -1452,18 +1498,28 @@
 
   async function guardarCanalServicio(empresaId, canal) {
     const mensaje = document.getElementById('mensaje-servicios');
-    let activo, detalles;
+    const activo = document.getElementById(`chk-${canal}`).checked;
+    let detalles;
+
     if (canal === 'formulario') {
-      activo = document.getElementById('chk-formulario').checked;
       detalles = { url_formulario: document.getElementById('form-url-formulario').value.trim() };
-    } else {
-      activo = document.getElementById(`chk-${canal}`).checked;
+    } else if (canal === 'whatsapp_independiente' || canal === 'whatsapp_coexistence') {
       detalles = {
         phone_number_id: document.getElementById(`form-phone-id-${canal}`).value.trim(),
         waba_id: document.getElementById(`form-waba-id-${canal}`).value.trim(),
         access_token: document.getElementById(`form-access-token-${canal}`).value.trim(),
       };
+    } else if (canal === 'email_funcional') {
+      detalles = { email_bandeja: document.getElementById('form-email-bandeja-email_funcional').value.trim() };
+    } else if (canal === 'instagram_chat') {
+      detalles = {
+        instagram_account_id: document.getElementById('form-ig-account-id-instagram_chat').value.trim(),
+        access_token: document.getElementById('form-access-token-instagram_chat').value.trim(),
+      };
+    } else if (canal === 'chat_web') {
+      detalles = { url_widget: document.getElementById('form-url-widget-chat_web').value.trim() };
     }
+
     await api(`/api/admin/canales/${empresaId}`, { method: 'PUT', body: JSON.stringify({ canal, activo, detalles }) });
     mensaje.textContent = `Canal "${canal}" guardado correctamente.`;
   }
@@ -1568,10 +1624,12 @@
         </select>
         <select id="filtro-lead-canal">
           <option value="">Todos los canales</option>
+          <option value="formulario">Formulario</option>
           <option value="whatsapp_independiente">WhatsApp Bot independiente</option>
           <option value="whatsapp_coexistence">WhatsApp Bot Coexistence</option>
-          <option value="formulario">Formulario</option>
-          <option value="email">Email</option>
+          <option value="email_funcional">Email funcional</option>
+          <option value="instagram_chat">Instagram Chat</option>
+          <option value="chat_web">Chat Web</option>
         </select>
         <select id="filtro-lead-cliente">
           <option value="">Todos los clientes</option>
