@@ -88,16 +88,27 @@ async function procesarMensajeEntranteInterno(
   );
 
   // El bot puede estar pausado para este canal y cliente (interruptor manual
-  // desde Servicios, sin desconectar el canal): si lo está, el mensaje se
-  // sigue clasificando y guardando con normalidad, pero ninguna respuesta se
+  // desde Servicios, sin desconectar el canal), o para este contacto
+  // concreto dentro del canal (alguien ha "tomado el control" de ese chat
+  // desde el portal). En cualquiera de los dos casos, el mensaje se sigue
+  // clasificando y guardando con normalidad, pero ninguna respuesta se
   // envía en automático — todo queda pendiente de que alguien lo atienda.
-  const { data: canalConfig } = await supabase
-    .from("empresa_canales")
-    .select("pausado")
-    .eq("empresa_id", mensaje.empresaId)
-    .eq("canal", mensaje.canal)
-    .maybeSingle();
-  const botPausado = canalConfig?.pausado ?? false;
+  const [{ data: canalConfig }, { data: contactoPausado }] = await Promise.all([
+    supabase
+      .from("empresa_canales")
+      .select("pausado")
+      .eq("empresa_id", mensaje.empresaId)
+      .eq("canal", mensaje.canal)
+      .maybeSingle(),
+    supabase
+      .from("contactos_pausados")
+      .select("empresa_id")
+      .eq("empresa_id", mensaje.empresaId)
+      .eq("canal", mensaje.canal)
+      .eq("remitente_contacto", mensaje.remitenteContacto)
+      .maybeSingle(),
+  ]);
+  const botPausado = (canalConfig?.pausado ?? false) || Boolean(contactoPausado);
 
   const { data: mensajeCliente } = await supabase
     .from("mensajes")

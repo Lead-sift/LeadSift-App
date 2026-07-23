@@ -3,110 +3,457 @@
 <head>
 <meta charset="UTF-8" />
 <title>Mi panel — LeadSift</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Work+Sans:wght@400;500;600&display=swap">
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 4rem; color: #222; }
-  h1 { font-size: 1.5rem; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
-  .kpi { background: #f4f8ff; border-radius: 8px; padding: 1rem; text-align: center; }
-  .kpi .numero { font-size: 1.8rem; font-weight: bold; color: #1a4d8f; }
-  .kpi .etiqueta { font-size: 0.8rem; color: #666; }
-  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #eee; font-size: 0.85rem; }
-  select, button { padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; font-size: 0.9rem; }
-  button { background: #1a4d8f; color: white; border: none; cursor: pointer; }
-  #salir { float: right; background: #eee; color: #222; }
+  :root {
+    --arcilla: #B54A2C; --arcilla-oscuro: #7A2F19; --ciruela: #4A2545;
+    --crema: #FBF6EE; --texto: #2B2620; --gris: #7A6B5C; --borde: #eaded0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'Work Sans', system-ui, sans-serif; color: var(--texto); background: var(--crema); }
+  h1, h2, h3 { font-family: 'Poppins', sans-serif; }
+
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: white; border-right: 1px solid var(--borde); padding: 1.25rem 1rem; flex-shrink: 0; display: flex; flex-direction: column; }
+  .marca-lockup { display: flex; align-items: center; gap: 8px; margin-bottom: 2rem; padding: 0 0.25rem; }
+  .marca-lockup span { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 1.15rem; }
+  .marca-lockup span em { color: var(--arcilla); font-style: normal; }
+  .enlace-nav { display: block; padding: 0.55rem 0.6rem; border-radius: 6px; color: var(--texto); text-decoration: none; font-size: 0.92rem; cursor: pointer; margin-bottom: 0.15rem; }
+  .enlace-nav:hover { background: #f4ede4; }
+  .enlace-nav.activo { background: var(--arcilla); color: white; }
+  .salir-btn { margin-top: auto; background: none; border: 1px solid var(--borde); border-radius: 6px; padding: 0.5rem; cursor: pointer; color: var(--gris); font-size: 0.85rem; }
+
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .topbar { background: white; border-bottom: 1px solid var(--borde); padding: 0.85rem 1.5rem; }
+  .topbar strong { font-family: 'Poppins', sans-serif; }
+  .contenido { padding: 1.75rem; flex: 1; overflow-y: auto; }
+  .contenido h2 { font-size: 1.3rem; margin-top: 0; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin: 1rem 0 1.5rem; }
+  .kpi { background: white; border: 1px solid var(--borde); border-radius: 8px; padding: 1rem; text-align: center; }
+  .kpi .numero { font-size: 1.7rem; font-weight: bold; color: var(--arcilla-oscuro); }
+  .kpi .etiqueta { font-size: 0.8rem; color: var(--gris); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; background: white; border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--borde); font-size: 0.87rem; }
+  th { background: #f4ede4; font-weight: 600; }
+  tr.fila-clic { cursor: pointer; }
+  tr.fila-clic:hover { background: #faf5ee; }
+
+  .filtros { display: flex; gap: 0.6rem; margin: 1rem 0; flex-wrap: wrap; }
+  input, select, textarea { padding: 0.55rem; border: 1px solid var(--borde); border-radius: 6px; font-family: inherit; font-size: 0.9rem; }
+  button.principal { padding: 0.55rem 1.1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem; background: var(--arcilla); color: white; }
+  button.secundario { padding: 0.45rem 0.9rem; border: 1px solid var(--borde); border-radius: 6px; cursor: pointer; font-size: 0.85rem; background: white; }
+
+  .panel-prompt { background: white; border: 1px solid var(--borde); border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
+
+  .badge { display: inline-block; font-size: 0.72rem; padding: 0.15rem 0.55rem; border-radius: 10px; color: white; font-weight: 600; }
+  .badge-en_curso { background: #2f7fd1; }
+  .badge-congelado { background: #7A6B5C; }
+  .badge-finalizado { background: #555; }
+  .badge-confirmado { background: #1a9f4d; }
+  .badge-desestimado { background: #c0392b; }
+  .badge-spam { background: #999; }
+  .badge-caliente { background: #c0392b; }
+  .badge-templado { background: #d98f2c; }
+  .badge-frio { background: #2f7fd1; }
+  .badge-pausado { background: var(--ciruela); }
+
+  .leads-layout { display: flex; gap: 1.25rem; align-items: flex-start; }
+  .leads-tabla-col { flex: 1; min-width: 0; }
+  .leads-detalle-col { flex: 0 0 0; width: 0; overflow: hidden; }
+  .leads-layout.detalle-abierto .leads-tabla-col { flex: 0 0 auto; width: auto; }
+  .leads-layout.detalle-abierto .leads-tabla-col .col-extra { display: none; }
+  .leads-layout.detalle-abierto .leads-detalle-col { flex: 1 1 auto; width: auto; overflow: visible; }
+  .leads-detalle-col .panel-detalle-lead { margin-top: 0; position: sticky; top: 1rem; }
+
+  .conversacion-caja { background: #f9f5ee; border: 1px solid var(--borde); border-radius: 6px; padding: 0.75rem; max-height: 320px; overflow-y: auto; margin-top: 0.4rem; }
+  .msg-cliente { margin-bottom: 0.6rem; }
+  .msg-cliente strong { color: var(--arcilla-oscuro); }
+  .msg-ia strong, .msg-humano strong { color: var(--ciruela); }
+
+  .lead-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+  .lead-campo strong { display: block; font-size: 0.75rem; color: var(--gris); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 0.15rem; }
 </style>
 </head>
 <body>
-  <button id="salir" onclick="salir()">Salir</button>
-  <h1>Mi panel</h1>
 
-  <div class="kpis" id="kpis"></div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="marca-lockup">
+      <span>Lead<em>Sift</em></span>
+    </div>
+    <nav>
+      <a class="enlace-nav" data-vista="resumen" onclick="irA('resumen')">Resumen</a>
+      <a class="enlace-nav" data-vista="leads" onclick="irA('leads')">Leads</a>
+      <a class="enlace-nav" data-vista="canales" onclick="irA('canales')">Canales</a>
+      <a class="enlace-nav" data-vista="documentos" onclick="irA('documentos')">Documentos</a>
+      <a class="enlace-nav" data-vista="facturacion" onclick="irA('facturacion')">Facturación</a>
+    </nav>
+    <button class="salir-btn" onclick="salir()">Salir</button>
+  </aside>
 
-  <h2>Consultas</h2>
-  <div>
-    <select id="filtro-canal" onchange="cargarConsultas()">
-      <option value="">Todos los canales</option>
-      <option value="email">Email</option>
-      <option value="formulario">Formulario</option>
-      <option value="whatsapp">WhatsApp</option>
-    </select>
-    <button onclick="exportarCSV()">Exportar CSV</button>
+  <div class="main">
+    <div class="topbar"><strong id="titulo-empresa">Mi panel</strong></div>
+    <div class="contenido" id="contenido"></div>
   </div>
-  <table id="tabla-consultas">
-    <thead><tr><th>Fecha</th><th>Canal</th><th>Contacto</th><th>Necesidad</th><th>Score</th></tr></thead>
-    <tbody></tbody>
-  </table>
+</div>
 
-  <script>
-    const token = localStorage.getItem('leadsift_token');
-    if (!token) window.location.href = '/login.html';
+<script>
+  const token = localStorage.getItem('leadsift_token');
+  if (!token) window.location.href = '/login.html';
 
-    let ultimasConsultas = [];
-
-    async function api(ruta) {
-      const res = await fetch(ruta, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.status === 401) {
-        localStorage.removeItem('leadsift_token');
-        window.location.href = '/login.html';
-        return null;
-      }
-      return res.json();
-    }
-
-    function salir() {
+  async function api(ruta, opciones = {}) {
+    const res = await fetch(ruta, {
+      ...opciones,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opciones.headers || {}) },
+    });
+    if (res.status === 401) {
       localStorage.removeItem('leadsift_token');
       window.location.href = '/login.html';
+      return null;
     }
+    return res.json();
+  }
 
-    async function cargarResumen() {
-      const r = await api('/api/portal/resumen');
-      document.getElementById('kpis').innerHTML = `
+  function salir() {
+    localStorage.removeItem('leadsift_token');
+    window.location.href = '/login.html';
+  }
+
+  const CANALES_ETIQUETA = {
+    formulario: 'Formulario web',
+    whatsapp_independiente: 'WhatsApp Bot independiente',
+    whatsapp_coexistence: 'WhatsApp Bot Coexistence',
+    email_funcional: 'Email funcional',
+    instagram_chat: 'Instagram Chat',
+    chat_web: 'Chat Web',
+  };
+
+  const vistas = { resumen: renderResumen, leads: renderLeads, canales: renderCanales, documentos: renderDocumentos, facturacion: renderFacturacion };
+
+  function irA(vista) {
+    document.querySelectorAll('.enlace-nav').forEach((a) => a.classList.toggle('activo', a.dataset.vista === vista));
+    window.location.hash = vista;
+    vistas[vista]();
+  }
+
+  // --- Resumen ---
+  async function renderResumen() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = '<h2>Resumen</h2><p>Cargando...</p>';
+    const r = await api('/api/portal/resumen');
+    if (!r || r.error) { contenido.innerHTML = `<h2>Resumen</h2><p style="color:#c0392b;">${r?.error ?? 'Error cargando el resumen'}</p>`; return; }
+
+    contenido.innerHTML = `
+      <h2>Resumen</h2>
+      <div class="kpis">
         <div class="kpi"><div class="numero">${r.total}</div><div class="etiqueta">Leads totales</div></div>
+        <div class="kpi"><div class="numero">${r.leadsEsteMes}</div><div class="etiqueta">Este mes</div></div>
         <div class="kpi"><div class="numero">${r.calientes}</div><div class="etiqueta">Calientes</div></div>
         <div class="kpi"><div class="numero">${r.templados}</div><div class="etiqueta">Templados</div></div>
         <div class="kpi"><div class="numero">${r.frios}</div><div class="etiqueta">Fríos</div></div>
+      </div>
+      <h3>Actividad por canal</h3>
+      <table>
+        <thead><tr><th>Canal</th><th>Estado</th><th>Bot</th></tr></thead>
+        <tbody>
+          ${r.canales.map((c) => `
+            <tr>
+              <td>${CANALES_ETIQUETA[c.canal] ?? c.canal}</td>
+              <td>${c.estado_conexion === 'conectado' ? '<span class="badge badge-confirmado">Conectado</span>' : '<span class="badge badge-spam">Desconectado</span>'}</td>
+              <td>${c.pausado ? '<span class="badge badge-pausado">En pausa</span>' : '<span class="badge badge-confirmado">Activo</span>'}</td>
+            </tr>
+          `).join('') || '<tr><td colspan="3" style="color:var(--gris);">Sin canales configurados todavía.</td></tr>'}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // --- Canales ---
+  async function renderCanales() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = '<h2>Canales</h2><p>Cargando...</p>';
+    const canales = await api('/api/portal/canales');
+    if (!canales || canales.error) { contenido.innerHTML = `<h2>Canales</h2><p style="color:#c0392b;">${canales?.error ?? 'Error cargando canales'}</p>`; return; }
+
+    contenido.innerHTML = `
+      <h2>Canales</h2>
+      <p style="color:var(--gris); font-size:0.9rem; margin-top:-0.5rem;">Puedes pausar un canal completo (deja de responder automáticamente en todo ese canal) sin perder la conexión.</p>
+      <table>
+        <thead><tr><th>Canal</th><th>Estado de conexión</th><th>Bot</th><th>Acción</th></tr></thead>
+        <tbody>
+          ${canales.map((c) => `
+            <tr>
+              <td>${CANALES_ETIQUETA[c.canal] ?? c.canal}</td>
+              <td>${c.estado_conexion === 'conectado' ? '<span class="badge badge-confirmado">Conectado</span>' : '<span class="badge badge-spam">Desconectado</span>'}</td>
+              <td>${c.pausado ? '<span class="badge badge-pausado">En pausa</span>' : '<span class="badge badge-confirmado">Activo</span>'}</td>
+              <td><button class="secundario" onclick="pausarCanal('${c.canal}', ${!c.pausado})">${c.pausado ? 'Reanudar' : 'Pausar'}</button></td>
+            </tr>
+          `).join('') || '<tr><td colspan="4" style="color:var(--gris);">Sin canales configurados todavía.</td></tr>'}
+        </tbody>
+      </table>
+      <p id="mensaje-canales" style="margin-top:0.75rem; font-size:0.9rem;"></p>
+    `;
+  }
+
+  async function pausarCanal(canal, pausado) {
+    const resultado = await api('/api/portal/canales/pausa', { method: 'PUT', body: JSON.stringify({ canal, pausado }) });
+    if (resultado?.error) { document.getElementById('mensaje-canales').textContent = 'Error: ' + resultado.error; return; }
+    renderCanales();
+  }
+
+  // --- Leads ---
+  function textoResultado(r) {
+    return r === 'confirmado' ? 'Confirmado' : r === 'desestimado' ? 'Desestimado' : r === 'spam' ? 'Spam' : '—';
+  }
+  function textoEstado(e) {
+    return e === 'en_curso' ? 'En curso' : e === 'congelado' ? 'Congelado' : 'Finalizado';
+  }
+  function textoTemperatura(t) {
+    const n = Number(t);
+    if (!isNaN(n)) return n >= 70 ? 'caliente' : n >= 40 ? 'templado' : 'frio';
+    return t || 'frio';
+  }
+
+  const MOTIVOS_DESESTIMACION = [
+    'No hay presupuesto', 'No es el momento / sin urgencia', 'Ya trabaja con otro proveedor',
+    'El producto o servicio no se ajusta a su necesidad', 'Fuera de zona de cobertura',
+    'No responde / se pierde el contacto', 'Precio', 'Otro',
+  ];
+
+  async function renderLeads() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = `
+      <h2>Leads</h2>
+      <div class="filtros">
+        <select id="filtro-lead-canal">
+          <option value="">Todos los canales</option>
+          ${Object.entries(CANALES_ETIQUETA).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}
+        </select>
+        <button class="secundario" onclick="cargarLeadsPortal()">Filtrar</button>
+      </div>
+      <div class="leads-layout" id="leads-layout">
+        <div class="leads-tabla-col">
+          <table id="tabla-leads">
+            <thead>
+              <tr>
+                <th class="col-id">ID</th>
+                <th class="col-extra">Canal</th>
+                <th class="col-extra">Estado</th>
+                <th class="col-extra">Resultado</th>
+                <th class="col-extra">Temperatura</th>
+                <th class="col-extra">Bot</th>
+                <th class="col-extra">Fecha</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="leads-detalle-col" id="panel-detalle-lead"></div>
+      </div>
+    `;
+    cargarLeadsPortal();
+  }
+
+  async function cargarLeadsPortal() {
+    const canal = document.getElementById('filtro-lead-canal').value;
+    const query = canal ? `?canal=${canal}` : '';
+    const datos = await api(`/api/portal/leads${query}`);
+    const cuerpo = document.querySelector('#tabla-leads tbody');
+    if (!datos || datos.error) { cuerpo.innerHTML = `<tr><td colspan="7" style="color:#c0392b;">${datos?.error ?? 'Error'}</td></tr>`; return; }
+
+    cuerpo.innerHTML = '';
+    for (const l of datos) {
+      const temperatura = textoTemperatura(l.temperatura);
+      const fila = document.createElement('tr');
+      fila.className = 'fila-clic';
+      fila.onclick = () => abrirDetalleLeadPortal(l.id);
+      fila.innerHTML = `
+        <td class="col-id">${l.id.slice(0, 8)}</td>
+        <td class="col-extra">${CANALES_ETIQUETA[l.canal] ?? l.canal}</td>
+        <td class="col-extra"><span class="badge badge-${l.estado}">${textoEstado(l.estado)}</span></td>
+        <td class="col-extra">${l.resultado ? `<span class="badge badge-${l.resultado}">${textoResultado(l.resultado)}</span>` : '—'}</td>
+        <td class="col-extra"><span class="badge badge-${temperatura}">${temperatura}</span></td>
+        <td class="col-extra">${l.pausado ? '<span class="badge badge-pausado">En pausa</span>' : '<span class="badge badge-confirmado">Activo</span>'}</td>
+        <td class="col-extra">${new Date(l.createdAt).toLocaleString('es-ES')}</td>
       `;
+      cuerpo.appendChild(fila);
     }
+  }
 
-    async function cargarConsultas() {
-      const canal = document.getElementById('filtro-canal').value;
-      const query = canal ? `?canal=${canal}` : '';
-      const consultas = await api(`/api/portal/consultas${query}`);
-      ultimasConsultas = consultas;
+  async function abrirDetalleLeadPortal(conversacionId) {
+    document.getElementById('leads-layout').classList.add('detalle-abierto');
+    const panel = document.getElementById('panel-detalle-lead');
+    panel.innerHTML = '<p>Cargando...</p>';
+    const l = await api(`/api/portal/leads/${conversacionId}`);
+    if (!l || l.error) { panel.innerHTML = `<p style="color:#c0392b;">${l?.error ?? 'Error'}</p>`; return; }
 
-      const cuerpo = document.querySelector('#tabla-consultas tbody');
-      cuerpo.innerHTML = '';
-      for (const c of consultas) {
-        const lead = Array.isArray(c.leads) ? c.leads[0] : c.leads;
-        const fila = document.createElement('tr');
-        fila.innerHTML = `
-          <td>${new Date(c.created_at).toLocaleString('es-ES')}</td>
-          <td>${c.canal}</td>
-          <td>${c.remitente_contacto}</td>
-          <td>${lead?.necesidad ?? '—'}</td>
-          <td>${lead?.score ?? '—'}</td>
-        `;
-        cuerpo.appendChild(fila);
-      }
-    }
+    const temperatura = textoTemperatura(l.temperatura);
+    const mensajesHtml = (l.mensajes || [])
+      .map((m) => `<div class="msg-${m.origen}"><strong>${m.origen === 'cliente' ? 'Cliente' : m.origen === 'humano' ? 'Tú' : 'IA'}:</strong> ${m.contenido}</div>`)
+      .join('') || '<p style="color:var(--gris);">Sin mensajes.</p>';
 
-    function exportarCSV() {
-      const filas = [['Fecha', 'Canal', 'Contacto', 'Necesidad', 'Score']];
-      for (const c of ultimasConsultas) {
-        const lead = Array.isArray(c.leads) ? c.leads[0] : c.leads;
-        filas.push([c.created_at, c.canal, c.remitente_contacto, lead?.necesidad ?? '', lead?.score ?? '']);
-      }
-      const csv = filas.map((f) => f.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const enlace = document.createElement('a');
-      enlace.href = URL.createObjectURL(blob);
-      enlace.download = 'consultas-leadsift.csv';
-      enlace.click();
-    }
+    const opcionesMotivo = MOTIVOS_DESESTIMACION.map(
+      (m) => `<option value="${m}" ${l.motivo_desestimado === m ? 'selected' : ''}>${m}</option>`
+    ).join('');
 
-    cargarResumen();
-    cargarConsultas();
-  </script>
+    panel.innerHTML = `
+      <div class="panel-prompt">
+        <button class="secundario" onclick="cerrarDetalleLeadPortal()">← Volver a la tabla</button>
+        <h3>Detalle del lead</h3>
+        <div class="lead-campos">
+          <div class="lead-campo"><strong>ID de Lead</strong>${l.id}</div>
+          <div class="lead-campo"><strong>Canal</strong>${CANALES_ETIQUETA[l.canal] ?? l.canal}</div>
+          <div class="lead-campo"><strong>Estado</strong><span class="badge badge-${l.estado}">${textoEstado(l.estado)}</span></div>
+          <div class="lead-campo"><strong>Temperatura</strong><span class="badge badge-${temperatura}">${temperatura}</span></div>
+          <div class="lead-campo"><strong>Contacto</strong>${l.remitente_contacto ?? '—'}</div>
+          <div class="lead-campo"><strong>Tipo de consulta</strong>${l.intencion ?? '—'}</div>
+          <div class="lead-campo"><strong>Fecha</strong>${new Date(l.created_at).toLocaleString('es-ES')}</div>
+        </div>
+
+        ${l.lead ? `
+        <div class="lead-campos">
+          <div class="lead-campo"><strong>Nombre de contacto</strong>${l.lead.nombre_contacto ?? '—'}</div>
+          <div class="lead-campo"><strong>Necesidad</strong>${l.lead.necesidad ?? '—'}</div>
+          <div class="lead-campo"><strong>Presupuesto estimado</strong>${l.lead.presupuesto_estimado ?? '—'}</div>
+          <div class="lead-campo"><strong>Urgencia</strong>${l.lead.urgencia ?? '—'}</div>
+        </div>` : ''}
+
+        <h4>Conversación</h4>
+        <div class="conversacion-caja">${mensajesHtml}</div>
+
+        <div style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <input id="respuesta-manual-portal" placeholder="Escribe una respuesta..." style="flex:1; min-width:200px;" />
+          <button class="secundario" onclick="enviarRespuestaManual('${conversacionId}')">Enviar</button>
+        </div>
+        <p id="mensaje-respuesta-portal" style="font-size:0.85rem; margin-top:0.3rem;"></p>
+
+        <h4 style="margin-top:1.25rem;">Control del bot</h4>
+        <p style="font-size:0.85rem; color:var(--gris);">Estado: <strong>${l.pausado ? 'En pausa (lo llevas tú)' : 'Activo (responde automáticamente)'}</strong></p>
+        <button class="${l.pausado ? 'principal' : 'secundario'}" onclick="pausarLeadPortal('${conversacionId}', ${!l.pausado})">${l.pausado ? 'Reanudar bot' : 'Tomar el control'}</button>
+
+        <h4 style="margin-top:1.25rem;">Resultado</h4>
+        <div class="filtros" style="max-width:600px;">
+          <select id="lead-resultado-portal">
+            <option value="">Sin resolver</option>
+            <option value="confirmado" ${l.resultado === 'confirmado' ? 'selected' : ''}>Confirmado</option>
+            <option value="desestimado" ${l.resultado === 'desestimado' ? 'selected' : ''}>Desestimado</option>
+          </select>
+          <select id="lead-motivo-portal"><option value="">—</option>${opcionesMotivo}</select>
+          <button class="principal" onclick="guardarResultadoPortal('${conversacionId}')">Guardar</button>
+        </div>
+        <p id="mensaje-resultado-portal" style="font-size:0.85rem; margin-top:0.3rem;"></p>
+      </div>
+    `;
+  }
+
+  function cerrarDetalleLeadPortal() {
+    document.getElementById('leads-layout').classList.remove('detalle-abierto');
+    document.getElementById('panel-detalle-lead').innerHTML = '';
+  }
+
+  async function pausarLeadPortal(conversacionId, pausado) {
+    const resultado = await api(`/api/portal/leads/${conversacionId}/pausar`, { method: 'POST', body: JSON.stringify({ pausado }) });
+    if (resultado?.error) { alert(resultado.error); return; }
+    abrirDetalleLeadPortal(conversacionId);
+    cargarLeadsPortal();
+  }
+
+  async function enviarRespuestaManual(conversacionId) {
+    const campo = document.getElementById('respuesta-manual-portal');
+    const mensaje = campo.value.trim();
+    const feedback = document.getElementById('mensaje-respuesta-portal');
+    if (!mensaje) { feedback.textContent = 'Escribe algo antes de enviar'; return; }
+
+    const resultado = await api(`/api/portal/leads/${conversacionId}/responder`, { method: 'POST', body: JSON.stringify({ mensaje }) });
+    if (resultado?.error) { feedback.textContent = 'Error: ' + resultado.error; return; }
+    campo.value = '';
+    feedback.textContent = '✅ Respuesta registrada.';
+    abrirDetalleLeadPortal(conversacionId);
+  }
+
+  async function guardarResultadoPortal(conversacionId) {
+    const resultado = document.getElementById('lead-resultado-portal').value || null;
+    const motivoDesestimado = resultado === 'desestimado' ? (document.getElementById('lead-motivo-portal').value || null) : null;
+    const respuesta = await api(`/api/portal/leads/${conversacionId}`, { method: 'PUT', body: JSON.stringify({ resultado, motivoDesestimado }) });
+    if (respuesta?.error) { document.getElementById('mensaje-resultado-portal').textContent = 'Error: ' + respuesta.error; return; }
+    abrirDetalleLeadPortal(conversacionId);
+    cargarLeadsPortal();
+  }
+
+  // --- Documentos ---
+  async function renderDocumentos() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = '<h2>Documentos</h2><p>Cargando...</p>';
+    const datos = await api('/api/portal/documentos');
+    if (!datos || datos.error) { contenido.innerHTML = `<h2>Documentos</h2><p style="color:#c0392b;">${datos?.error ?? 'Error'}</p>`; return; }
+
+    const ETIQUETAS = { factura: 'Factura', contrato: 'Contrato', contrato_lopd: 'Contrato cesión datos personales', otros: 'Otros' };
+
+    contenido.innerHTML = `
+      <h2>Documentos</h2>
+      <table>
+        <thead><tr><th>Categoría</th><th>Título</th><th>Fecha</th><th></th></tr></thead>
+        <tbody>
+          ${datos.map((d) => `
+            <tr>
+              <td>${ETIQUETAS[d.categoria] ?? d.categoria}</td>
+              <td>${d.titulo}</td>
+              <td>${new Date(d.created_at).toLocaleDateString('es-ES')}</td>
+              <td><button class="secundario" onclick="verDocumentoPortal('${d.id}')">Ver</button></td>
+            </tr>
+          `).join('') || '<tr><td colspan="4" style="color:var(--gris);">Sin documentos todavía.</td></tr>'}
+        </tbody>
+      </table>
+    `;
+  }
+
+  async function verDocumentoPortal(entradaId) {
+    const resultado = await api(`/api/portal/documentos/${entradaId}/archivo`);
+    if (resultado?.error) { alert(resultado.error); return; }
+    window.open(resultado.url, '_blank');
+  }
+
+  // --- Facturación ---
+  async function renderFacturacion() {
+    const contenido = document.getElementById('contenido');
+    contenido.innerHTML = '<h2>Facturación</h2><p>Cargando...</p>';
+    const datos = await api('/api/portal/facturacion');
+    if (!datos || datos.error) { contenido.innerHTML = `<h2>Facturación</h2><p style="color:#c0392b;">${datos?.error ?? 'Error'}</p>`; return; }
+
+    contenido.innerHTML = `
+      <h2>Facturación</h2>
+      <table>
+        <thead><tr><th>Nº Factura</th><th>Periodo</th><th>Paquete</th><th>Total</th><th></th></tr></thead>
+        <tbody>
+          ${datos.map((r) => `
+            <tr>
+              <td style="font-family:monospace;">${r.numero_factura}</td>
+              <td>${r.mes}/${r.anio}</td>
+              <td>${r.paquete_nombre ?? '—'}</td>
+              <td>${Number(r.total).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}</td>
+              <td><button class="secundario" onclick="verFacturaPortal('${r.id}')">Ver PDF</button></td>
+            </tr>
+          `).join('') || '<tr><td colspan="5" style="color:var(--gris);">Sin facturas todavía.</td></tr>'}
+        </tbody>
+      </table>
+    `;
+  }
+
+  async function verFacturaPortal(reciboId) {
+    const resultado = await api(`/api/portal/facturacion/${reciboId}/pdf`);
+    if (resultado?.error) { alert(resultado.error); return; }
+    window.open(resultado.url, '_blank');
+  }
+
+  // --- Arranque ---
+  api('/api/portal/resumen').then((r) => {
+    if (r?.empresaNombre) document.getElementById('titulo-empresa').textContent = r.empresaNombre;
+  });
+  const vistaInicial = window.location.hash.replace('#', '') || 'resumen';
+  irA(vistas[vistaInicial] ? vistaInicial : 'resumen');
+</script>
 </body>
 </html>
