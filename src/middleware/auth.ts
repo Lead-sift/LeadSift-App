@@ -59,7 +59,46 @@ export function requiereRol(...rolesPermitidos: Rol[]) {
 }
 
 export const requiereInterno = requiereRol(...ROLES_INTERNOS);
-export const requiereClientUser = requiereRol("client_user");
+
+// Golden rule del portal de cliente: un usuario externo (client_user) no
+// puede ver ningún dato que no esté vinculado a su propio NIF/CIF. Se
+// verifica que el NIF del perfil coincida con el nif_cif_nie de la empresa
+// a la que está vinculado — ante cualquier duda (NIF o CIF ausentes, no
+// coinciden, empresa no encontrada), se deniega el acceso por completo en
+// vez de asumir que es correcto.
+function normalizarNif(valor: string): string {
+  return valor.trim().toUpperCase();
+}
+
+export async function requiereClientUser(req: Request, res: Response, next: NextFunction) {
+  const perfil = await autenticar(req, res);
+  if (!perfil) return;
+
+  if (perfil.rol !== "client_user") {
+    return res.status(403).json({ error: "No tienes permiso para acceder a este recurso" });
+  }
+
+  if (!perfil.nif || !perfil.empresa_id) {
+    return res
+      .status(403)
+      .json({ error: "Tu usuario no tiene NIF o empresa vinculada. Contacta con soporte." });
+  }
+
+  const { data: empresa, error } = await supabase
+    .from("empresas")
+    .select("nif_cif_nie")
+    .eq("id", perfil.empresa_id)
+    .single();
+
+  if (error || !empresa?.nif_cif_nie || normalizarNif(empresa.nif_cif_nie) !== normalizarNif(perfil.nif)) {
+    return res
+      .status(403)
+      .json({ error: "El NIF de tu usuario no coincide con el de la empresa vinculada. Contacta con soporte." });
+  }
+
+  req.perfil = perfil;
+  next();
+}
 
 // Cualquier usuario autenticado con perfil válido, sin restricción de rol
 // (usado en /api/me para que el frontend sepa a dónde redirigir tras login).
